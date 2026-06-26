@@ -4,13 +4,18 @@ __pycache__/
 *.egg-info/
 .venv/
 venv/
+backend/venv/
 *.db
 .env
+backend/.env
 
 # Node
 node_modules/
+.frontend/node_modules/
 .next/
 out/
+frontend/.next/
+frontend/out/
 
 # IDE
 .vscode/
@@ -22,8 +27,16 @@ Thumbs.db
 nul
 device.ini
 
-# Frontend specific
-frontend/node_modules/
-
 # Build output
 db.json
+frontend/.env.local
+
+# Lock files (optional, uncomment if desired)
+# *.lock
+
+# Cloudflare
+wrangler.toml
+.wrk
+
+# Vercel
+.vercel
