@@ -1,0 +1,23 @@
+{
+  "playerTag": "#QY8Q8CV",
+  "playerName": "TestPlayer",
+  "buildings": [
+    {"data": 1000028, "lvl": 11, "timer": 289397},
+    {"data": 1000027, "lvl": 9, "timer": 86400},
+    {"data": 1000001, "lvl": 20, "timer": 0},
+    {"data": 1000002, "lvl": 19}
+  ],
+  "spells": [
+    {"data": 2000005, "lvl": 8, "timer": 172800}
+  ],
+  "heroes": [
+    {"data": 3000001, "lvl": 85, "timer": 432000},
+    {"data": 3000002, "lvl": 80}
+  ],
+  "pets": [
+    {"data": 4000001, "lvl": 10, "timer": 259200}
+  ],
+  "equipment": [
+    {"data": 5000002, "lvl": 15, "timer": 82800}
+  ]
+}
