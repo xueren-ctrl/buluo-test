@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="theme-color" content="#020617"/>
+  <style>
+    body{margin:0;background:#020617;display:flex;align-items:center;justify-content:center;height:100vh;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:#f1f5f9}
+    .spinner{width:36px;height:36px;border:3px solid #334155;border-top-color:#6366f1;border-radius:50%;animation:spin .8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+  </style>
+</head>
+<body>
+  <div style="display:flex;flex-direction:column;align-items:center;gap:12px">
+    <div class="spinner"></div>
+    <span style="font-size:14px;color:#64748b">加载中…</span>
+  </div>
+</body>
+</html>

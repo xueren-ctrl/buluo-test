@@ -1,0 +1,16 @@
+{
+  "version": "0.2",
+  "functions": [
+    {
+      "type": "web_static_site",
+      "payload": {
+        "resource_name_prefix": "coc-reminder",
+        "publish_directory": ".",
+        "spa_mode": false,
+        "error_page_override": null,
+        "isolation_bucket": false
+      }
+    }
+  ],
+  "$schema": "https://framework.cloudstudio.net/schemas/20241015/devContainerSchema.json"
+}

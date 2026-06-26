@@ -1,0 +1,253 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===================== 全局基础 ===================== */
+body {
+  @apply bg-dark-950 text-dark-100;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, "Noto Sans SC", sans-serif;
+  /* 禁止移动端双击缩放 */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ===================== 自定义滚动条 ===================== */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-dark-900;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-dark-600 rounded-full;
+}
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-dark-500;
+}
+
+/* ===================== 基础卡片 ===================== */
+.glass-card {
+  @apply bg-dark-850/80 backdrop-blur-xl border border-dark-700/50 rounded-2xl;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-card:hover {
+  border-color: rgba(99, 102, 241, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 16px rgba(99, 102, 241, 0.08);
+  transform: translateY(-1px);
+}
+
+/* ===================== 发光边框 ===================== */
+.glow-border {
+  @apply border border-brand-500/30;
+  box-shadow: 0 0 15px rgba(99, 102, 241, 0.15), inset 0 0 15px rgba(99, 102, 241, 0.03);
+}
+
+/* ===================== 渐变背景 ===================== */
+.gradient-bg {
+  background: linear-gradient(135deg, #020617 0%, #0f172a 50%, #020617 100%);
+  background-attachment: fixed;
+}
+
+/* ===================== 骨架屏加载动画 ===================== */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  @apply bg-dark-700/50 rounded-lg;
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(99, 102, 241, 0.06) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+/* ===================== 分类色光晕 ===================== */
+.glow-amber { box-shadow: 0 0 20px rgba(245, 158, 11, 0.1); }
+.glow-indigo { box-shadow: 0 0 20px rgba(99, 102, 241, 0.1); }
+.glow-yellow { box-shadow: 0 0 20px rgba(234, 179, 8, 0.15); }
+.glow-emerald { box-shadow: 0 0 20px rgba(16, 185, 129, 0.1); }
+.glow-violet { box-shadow: 0 0 20px rgba(139, 92, 246, 0.1); }
+
+/* ===================== 脉冲高亮 (即将完成) ===================== */
+@keyframes urgent-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.15); }
+  50% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+}
+
+.animate-urgent {
+  animation: urgent-pulse 2s ease-in-out infinite;
+}
+
+/* ===================== 升级进度条 ===================== */
+.progress-bar {
+  @apply h-1.5 bg-dark-800 rounded-full overflow-hidden;
+}
+
+.progress-bar-fill {
+  transition: width 1s linear, background-color 0.5s ease;
+}
+
+/* ===================== Hero 标题文字渐变 ===================== */
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.gradient-title {
+  background: linear-gradient(
+    90deg,
+    #fbbf24,
+    #f59e0b,
+    #818cf8,
+    #6366f1,
+    #f59e0b,
+    #fbbf24
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradient-shift 8s linear infinite;
+}
+
+/* ===================== 数字翻转动画 ===================== */
+@keyframes digit-flip {
+  0% { transform: translateY(0); opacity: 1; }
+  45% { transform: translateY(-4px); opacity: 0; }
+  55% { transform: translateY(4px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+.animate-digit-flip {
+  animation: digit-flip 0.3s ease-in-out;
+}
+
+/* ===================== 折叠面板动画 ===================== */
+.collapsible-content {
+  overflow: hidden;
+  transition: max-height 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+}
+
+.collapsible-content.collapsed {
+  max-height: 0;
+  opacity: 0;
+}
+
+.collapsible-content.expanded {
+  max-height: 1000px;
+  opacity: 1;
+}
+
+/* ===================== 统计卡片 ===================== */
+.stat-card {
+  @apply glass-card p-4 md:p-5 text-center;
+  @apply hover:scale-[1.02] active:scale-[0.98];
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ===================== 升级项卡片 ===================== */
+.upgrade-card {
+  @apply glass-card overflow-hidden;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.upgrade-card:hover {
+  transform: translateY(-2px) scale(1.005);
+}
+
+/* ===================== 按钮样式 ===================== */
+.btn-primary {
+  @apply bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400
+         text-white font-semibold rounded-xl transition-all duration-200
+         active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+}
+
+.btn-secondary {
+  @apply glass-card border border-dark-600 hover:border-brand-500/50
+         text-dark-100 font-medium rounded-xl transition-all duration-200
+         active:scale-[0.97] disabled:opacity-50;
+}
+
+/* ===================== Toast 增强 ===================== */
+.toast-success {
+  @apply bg-dark-800 border border-green-500/30 text-dark-100;
+  box-shadow: 0 4px 16px rgba(34, 197, 94, 0.15);
+}
+
+.toast-error {
+  @apply bg-dark-800 border border-red-500/30 text-dark-100;
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.15);
+}
+
+/* ===================== 信息层级: 主内容聚焦 ===================== */
+.focus-zone {
+  @apply transition-all duration-300;
+}
+
+.focus-zone.dimmed {
+  @apply opacity-40 pointer-events-none;
+}
+
+/* ===================== Tabular nums (倒计时) ===================== */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ===================== 移动端优化 ===================== */
+@media (max-width: 768px) {
+  .glass-card {
+    @apply rounded-xl;
+  }
+  .upgrade-card {
+    @apply p-3;
+  }
+  main {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+  /* 移动端更大的触摸目标 */
+  .btn-primary, .btn-secondary {
+    @apply py-3 text-sm;
+  }
+  /* 移动端卡片更宽松间距 */
+  .stat-card {
+    @apply p-3;
+  }
+  /* 移动端隐藏滚动条 */
+  ::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* ===================== 安全区域适配 (iPhone 刘海屏) ===================== */
+@supports (padding: max(0px)) {
+  main {
+    padding-left: max(0.75rem, env(safe-area-inset-left)) !important;
+    padding-right: max(0.75rem, env(safe-area-inset-right)) !important;
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom)) !important;
+  }
+}
+
+/* ===================== 防止 iOS Safari 输入缩放 ===================== */
+@media screen and (orientation: portrait) {
+  input, textarea {
+    font-size: 16px !important;
+  }
+}
