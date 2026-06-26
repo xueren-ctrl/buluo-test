@@ -2,7 +2,8 @@
  * 工具函数 — 倒计时 / 时间格式化 / 数据过期检测 / 中文映射
  */
 
-import { getItemNameById, getUpgradeDisplay, ITEM_CATEGORY_LABELS } from "./coc-assets";
+import { getItemNameById, ITEM_CATEGORY_LABELS, ITEM_MAP } from "./coc-assets";
+import { getUpgradeDisplay } from "./coc-assets";
 
 // ── 格式化剩余秒数为可读字符串 ──────────────
 /**
@@ -113,8 +114,8 @@ export function getProgressBarPercent(finishTime: string, timerSeconds: number |
  */
 export function getZhName(category: string, dataId: number | null, level: number): string {
   if (dataId != null) {
-    const info = getItemNameById(category, dataId);
-    if (info) return `${info.zh} Lv${level}`;
+    const name = getItemNameById(dataId);
+    if (name) return `${name} Lv${level}`;
   }
 
   const catLabel = ITEM_CATEGORY_LABELS[category] || category;
@@ -126,7 +127,7 @@ export function getZhName(category: string, dataId: number | null, level: number
  */
 export function getCategoryIcon(category: string, dataId: number | null): string {
   if (dataId != null) {
-    const info = getItemNameById(category, dataId);
+    const info = ITEM_MAP[dataId];
     if (info) return info.icon;
   }
 

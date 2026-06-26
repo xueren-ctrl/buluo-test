@@ -362,3 +362,55 @@ export function formatUpgradeDisplay(
     icon: info.icon,
   };
 }
+
+// ============================================
+// 别名导出 (兼容 page.tsx / utils.ts 中的旧引用)
+// ============================================
+
+/** 根据 SC ID 获取中文名称 */
+export function getItemNameById(scId: number): string {
+  return ITEM_MAP[scId]?.zh ?? `未知#${scId}`;
+}
+
+/** 根据 category + data_id + level 格式化升级显示（匹配 page.tsx 调用方式） */
+export function getUpgradeDisplay(
+  category: string,
+  dataId: number | null,
+  level: number
+): { zh: string; en: string; color: string; icon: string } {
+  if (dataId != null) {
+    const info = getItemInfo(dataId, category);
+    if (info) {
+      return {
+        zh: `${info.zh} Lv${level}`,
+        en: `${info.en} Lv${level}`,
+        color: info.color,
+        icon: info.icon,
+      };
+    }
+  }
+  const catLabel = CATEGORY_LABELS[category] ?? category;
+  return {
+    zh: `${catLabel} Lv${level}`,
+    en: `${category} Lv${level}`,
+    color: "gray",
+    icon: "❓",
+  };
+}
+
+/** 分类标签 — 别名，兼容旧接口 */
+export const ITEM_CATEGORY_LABELS: Record<string, string> = CATEGORY_LABELS;
+
+/** 分类背景颜色 — 用于 UI 渲染 */
+export const CATEGORY_BG_COLORS: Record<string, string> = {
+  buildings: "from-amber-900/30 to-amber-900/10",
+  spells: "from-indigo-900/30 to-indigo-900/10",
+  heroes: "from-yellow-600/30 to-yellow-600/10",
+  pets: "from-emerald-900/30 to-emerald-900/10",
+  equipment: "from-violet-900/30 to-violet-900/10",
+  units: "from-blue-900/30 to-blue-900/10",
+  siege: "from-cyan-900/30 to-cyan-900/10",
+  helper: "from-teal-900/30 to-teal-900/10",
+  trap: "from-red-900/30 to-red-900/10",
+  unknown: "from-gray-900/30 to-gray-900/10",
+};
