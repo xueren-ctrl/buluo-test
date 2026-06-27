@@ -430,21 +430,7 @@ export default function HomePage() {
 
       <main className="min-h-screen flex flex-col px-3 py-5 md:px-6 md:py-8 max-w-2xl mx-auto app-shell">
 
-        {/* ======== 顶部 PWA 安装条 ======== */}
-        {pwa.status === "deferred" && (
-          <div className="w-full mb-4 glass-card p-3 flex items-center justify-between border-brand-500/40">
-            <div className="flex items-center gap-2">
-              <span className="text-lg">📱</span>
-              <span className="text-sm text-dark-200">安装到主屏幕获得最佳体验</span>
-            </div>
-            <button
-              onClick={pwa.showPrompt}
-              className="bg-brand-600 hover:bg-brand-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors active:scale-95"
-            >
-              安装
-            </button>
-          </div>
-        )}
+        {/* ======== 顶部 PWA 安装条（已合并到下方通知引导）======== */}
 
         {/* ======== Hero 区域 ======== */}
         <header className="text-center mb-5">
@@ -477,31 +463,75 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* ======== 通知权限引导（未授权时显示）======== */}
-        {upgrades.length > 0 && !notifyStatus.browserNotifGranted && (
-          <div className="w-full mb-3 p-3 rounded-xl bg-brand-600/10 border border-brand-600/30 text-xs">
-            <div className="flex items-start gap-2">
-              <span className="text-base flex-shrink-0 mt-0.5">🔔</span>
-              <div className="flex-1 min-w-0">
-                <p className="text-brand-300 font-semibold mb-1">
-                  {notifyStatus.unsupportedReason
-                    ? `当前环境无法接收通知：${notifyStatus.unsupportedReason}`
-                    : "升级完成后将自动通知，请先开启权限"}
-                </p>
-                {notifyStatus.hint && (
-                  <p className="text-dark-400 text-[11px] leading-relaxed">{notifyStatus.hint}</p>
-                )}
-                {!notifyStatus.unsupportedReason && (
-                  <button
-                    onClick={handleEnableNotify}
-                    className="mt-2 px-3 py-1.5 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold transition-colors"
-                  >
-                    开启通知权限
-                  </button>
-                )}
+        {/* ======== 通知引导（PWA 安装 + 通知权限）======== */}
+        {upgrades.length > 0 && (
+          <>
+            {/* 非 PWA 模式：引导安装 PWA（系统通知中心必须安装 PWA）*/}
+            {!pwa.installed && !notifyStatus.unsupportedReason && (
+              <div className="w-full mb-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs">
+                <div className="flex items-start gap-2">
+                  <span className="text-base flex-shrink-0 mt-0.5">📱</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-amber-300 font-semibold mb-1">
+                      安装到主屏幕后，通知才能在手机通知中心弹出
+                    </p>
+                    <p className="text-dark-400 text-[11px] leading-relaxed mb-2">
+                      普通浏览器网页通知只在页面内显示，无法推送到系统通知中心。安装 PWA 后即使关闭页面也能收到通知。
+                    </p>
+                    {pwa.canInstall ? (
+                      <button
+                        onClick={pwa.showPrompt}
+                        className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold transition-colors"
+                      >
+                        安装到主屏幕
+                      </button>
+                    ) : (
+                      <p className="text-amber-300 text-[11px] font-semibold">
+                        📲 Chrome 菜单 ⋮ → 添加到主屏幕
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            )}
+
+            {/* PWA 模式但未授权通知 */}
+            {pwa.installed && !notifyStatus.browserNotifGranted && !notifyStatus.unsupportedReason && (
+              <div className="w-full mb-3 p-3 rounded-xl bg-brand-600/10 border border-brand-600/30 text-xs">
+                <div className="flex items-start gap-2">
+                  <span className="text-base flex-shrink-0 mt-0.5">🔔</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-brand-300 font-semibold mb-1">
+                      升级完成后将自动通知，请先开启权限
+                    </p>
+                    <button
+                      onClick={handleEnableNotify}
+                      className="mt-2 px-3 py-1.5 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold transition-colors"
+                    >
+                      开启通知权限
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 不支持通知的环境 */}
+            {notifyStatus.unsupportedReason && (
+              <div className="w-full mb-3 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-xs">
+                <div className="flex items-start gap-2">
+                  <span className="text-base flex-shrink-0 mt-0.5">⚠️</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-red-300 font-semibold mb-1">
+                      当前环境无法接收通知：{notifyStatus.unsupportedReason}
+                    </p>
+                    {notifyStatus.hint && (
+                      <p className="text-dark-400 text-[11px] leading-relaxed">{notifyStatus.hint}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         {/* ======== 上传区域 ======== */}
