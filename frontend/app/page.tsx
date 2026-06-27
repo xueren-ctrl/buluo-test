@@ -11,17 +11,10 @@ import {
   isDataStale,
 } from "@/lib/utils";
 import type { UpgradeItem, IdleTimes, PlayerInfo, VillageSnapshot } from "@/types";
-import { usePwaInstall } from "@/hooks/usePwaInstall";
 import {
-  requestNotificationPermission,
-  requestNotificationPermissionDetailed,
   registerSW,
   registerPeriodicSync,
-  detectNotifyStatus,
   triggerSWNotifyCheck,
-  isIOS,
-  isStandalone,
-  type NotifyStatus,
 } from "@/lib/notification-system";
 import {
   saveUpgrades,
@@ -30,7 +23,6 @@ import {
   resetAll,
   loadSettings,
   saveSettings,
-  clearNotifyState,
   saveVillage,
   type RawUpgradeRecord,
   type SchedulerSettings,
@@ -45,7 +37,6 @@ import { BuilderLabStatus } from "@/components/BuilderLabStatus";
 import { CategoryFilter } from "@/components/CategoryFilter";
 import { UpgradeList } from "@/components/UpgradeList";
 import { CompletedList } from "@/components/CompletedList";
-import { NotifySettingsPanel } from "@/components/NotifySettingsPanel";
 import { CollapsibleGuide } from "@/components/CollapsibleGuide";
 import { EmptyState } from "@/components/EmptyState";
 import { BaseAnalysisPanel } from "@/components/BaseAnalysisPanel";
@@ -79,16 +70,8 @@ export default function HomePage() {
   const [settings, setSettings] = useState<SchedulerSettings | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [village, setVillage] = useState<VillageSnapshot | null>(null);
-  const [notifyStatus, setNotifyStatus] = useState<NotifyStatus>({
-    browserNotifAvailable: false,
-    browserNotifGranted: false,
-    swRegistered: false,
-    periodicSyncSupported: false,
-    isInstalled: false,
-  });
 
   const schedulerRef = useRef<Scheduler | null>(null);
-  const pwa = usePwaInstall();
 
   // ── 实时倒计时 ────────────────────────
   const [, setTick] = useState(0);
@@ -162,13 +145,8 @@ export default function HomePage() {
       try {
         const reg = await registerSW();
         if (cancelled) return;
-        setNotifyStatus(detectNotifyStatus(reg));
         if (reg) {
-          registerPeriodicSync().then((ok) => {
-            if (!ok && reg) {
-              setNotifyStatus(detectNotifyStatus(reg));
-            }
-          });
+          registerPeriodicSync().catch(() => {});
           // App 打开时立即让 SW 跑一次通知检查，补发所有已到期但未发送的通知
           triggerSWNotifyCheck();
         }
@@ -395,24 +373,6 @@ export default function HomePage() {
     }
   };
 
-  // ── 开启通知权限 ─────────────────────
-  const handleEnableNotify = async () => {
-    const result = await requestNotificationPermissionDetailed();
-    if (result.granted) {
-      setNotifyStatus((s) => ({ ...s, browserNotifGranted: true }));
-      toast.success("通知权限已开启，升级完成会自动提醒", { className: "toast-success", duration: 4000 });
-      // 立即跑一次补发（可能已经有完成的）
-      schedulerRef.current?.catchUp(upgrades);
-      // 兜底：让 SW 也立即跑一次（页面关闭时也能补发）
-      triggerSWNotifyCheck();
-    } else {
-      // 显示具体失败原因
-      const msg = result.message || "通知权限未授予";
-      toast.error(msg, { className: "toast-error", duration: 6000 });
-      setNotifyStatus((s) => ({ ...s, ...detectNotifyStatus() }));
-    }
-  };
-
   // ── 清除所有本地数据 ──────────────────
   const handleClearAll = async () => {
     if (!confirm("确定要清除所有本地数据吗? 此操作不可撤销。")) return;
@@ -499,115 +459,6 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* ======== iOS 非 PWA 模式引导横幅 ======== */}
-        {isIOS() && !isStandalone() && (
-          <div
-            className="w-full mb-3 p-3 rounded text-xs"
-            style={{
-              background: "var(--color-warning-bg)",
-              border: "1.5px solid var(--color-warning)",
-            }}
-          >
-            <div className="flex items-start gap-2">
-              <span className="text-base flex-shrink-0 mt-0.5">📱</span>
-              <div className="flex-1 min-w-0">
-                <p className="text-warning font-semibold mb-1">
-                  请添加到主屏幕，才能接收升级完成通知
-                </p>
-                <p className="text-sub text-[11px] leading-relaxed">
-                  iOS Safari 不支持网页通知，必须安装为 PWA 后才能在系统通知中心收到提醒。
-                </p>
-                <p className="text-warning text-[11px] font-semibold mt-1">
-                  📲 点击底部分享按钮 → 添加到主屏幕
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ======== 通知引导（PWA 安装 + 通知权限）======== */}
-        {upgrades.length > 0 && (
-          <>
-            {/* 非 PWA 模式：引导安装 PWA（系统通知中心必须安装 PWA）*/}
-            {!pwa.installed && !notifyStatus.unsupportedReason && (
-              <div
-                className="w-full mb-3 p-3 rounded text-xs"
-                style={{
-                  background: "var(--color-warning-bg)",
-                  border: "1.5px solid var(--color-warning)",
-                }}
-              >
-                <div className="flex items-start gap-2">
-                  <span className="text-base flex-shrink-0 mt-0.5">📱</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-warning font-semibold mb-1">
-                      安装到主屏幕后，通知才能在手机通知中心弹出
-                    </p>
-                    <p className="text-sub text-[11px] leading-relaxed mb-2">
-                      普通浏览器网页通知只在页面内显示，无法推送到系统通知中心。安装 PWA 后即使关闭页面也能收到通知。
-                    </p>
-                    {pwa.canInstall ? (
-                      <button onClick={pwa.showPrompt} className="coc-btn text-xs py-1.5 px-3">
-                        安装到主屏幕
-                      </button>
-                    ) : (
-                      <p className="text-warning text-[11px] font-semibold">
-                        📲 Chrome 菜单 ⋮ → 添加到主屏幕
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* PWA 模式但未授权通知 */}
-            {pwa.installed && !notifyStatus.browserNotifGranted && !notifyStatus.unsupportedReason && (
-              <div
-                className="w-full mb-3 p-3 rounded text-xs"
-                style={{
-                  background: "var(--color-warning-bg)",
-                  border: "1.5px solid var(--color-warning)",
-                }}
-              >
-                <div className="flex items-start gap-2">
-                  <span className="text-base flex-shrink-0 mt-0.5">🔔</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-warning font-semibold mb-1">
-                      升级完成后将自动通知，请先开启权限
-                    </p>
-                    <button onClick={handleEnableNotify} className="coc-btn text-xs py-1.5 px-3 mt-2">
-                      开启通知权限
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* 不支持通知的环境 */}
-            {notifyStatus.unsupportedReason && (
-              <div
-                className="w-full mb-3 p-3 rounded text-xs"
-                style={{
-                  background: "var(--color-danger-bg)",
-                  border: "1.5px solid var(--color-danger)",
-                }}
-              >
-                <div className="flex items-start gap-2">
-                  <span className="text-base flex-shrink-0 mt-0.5">⚠️</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-danger font-semibold mb-1">
-                      当前环境无法接收通知：{notifyStatus.unsupportedReason}
-                    </p>
-                    {notifyStatus.hint && (
-                      <p className="text-sub text-[11px] leading-relaxed">{notifyStatus.hint}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-          </>
-        )}
-
         {/* ======== 上传区域 ======== */}
         <div className="animate-fade-up">
           <UploadSection
@@ -629,9 +480,18 @@ export default function HomePage() {
               settings={settings}
             />
 
-            {/* 基地分析 + 评分（新增） */}
-            <BaseScoreCard score={baseScore} />
-            <BaseAnalysisPanel analysis={analysis} />
+            {/* 基地简述（评分等级 + 风格一行）*/}
+            {baseScore && analysis && (
+              <div className="coc-card p-3 flex items-center justify-between text-sm">
+                <span className="text-sub">
+                  基地评分
+                  <span className="coc-countdown font-bold ml-1.5">{baseScore.total}</span>
+                  <span className="text-muted text-xs ml-1">/100</span>
+                </span>
+                <span className="text-gold font-semibold">{baseScore.grade} 级</span>
+                <span className="text-muted text-xs">{analysis.styleDescription}</span>
+              </div>
+            )}
 
             {/* 即将完成 (高亮) */}
             {nextUpgrade && (
@@ -651,11 +511,6 @@ export default function HomePage() {
               <button onClick={handleRefresh} disabled={loading} className="coc-btn-secondary flex-1 py-2 text-sm">
                 {loading ? "解析中..." : "重新解析"}
               </button>
-              {!notifyStatus.browserNotifGranted && (
-                <button onClick={handleEnableNotify} className="coc-btn-secondary flex-1 py-2 text-sm">
-                  开启通知
-                </button>
-              )}
             </div>
 
             {/* 分类筛选 */}
@@ -671,22 +526,12 @@ export default function HomePage() {
 
             {/* 最近完成 */}
             <CompletedList items={completedUpgrades} />
+
+            {/* 基地详细评分 + 分析（升级列表后）*/}
+            <BaseScoreCard score={baseScore} />
+            <BaseAnalysisPanel analysis={analysis} />
           </div>
         )}
-
-        {/* ======== 通知设置面板 ======== */}
-        <div className="animate-fade-up">
-          <NotifySettingsPanel
-            status={notifyStatus}
-          settings={settings}
-          onUpdateSettings={updateSettings}
-          onEnableNotify={handleEnableNotify}
-          onClearNotifyState={async () => {
-            await clearNotifyState();
-            toast.success("已清除通知去重记录，将重新提醒", { className: "toast-success" });
-          }}
-        />
-        </div>
 
         {/* ======== 工具栏 ======== */}
         {upgrades.length > 0 && (
