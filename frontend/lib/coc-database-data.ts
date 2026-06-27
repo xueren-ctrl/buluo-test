@@ -44,7 +44,7 @@ const HOUR = 3600;
 const RAW_DATA: CocItemDef[] = [
   // ============ 建筑 buildings ============
   // 核心功能建筑
-  { scId: 1000001, category: "buildings", zh: "市政厅", en: "Town Hall", buildCategory: "utility", maxLevel: 18, upgradeTimeSec: [10,3600,7200,14400,28800,43200,86400,172800,345600,432000,518400,691200,864000,1036800,1296000,1296000,1296000,1209600], thRequired: genTH(18,1,1), priority: 10, usesBuilder: true },
+  { scId: 1000001, category: "buildings", zh: "大本营", en: "Town Hall", buildCategory: "utility", maxLevel: 18, upgradeTimeSec: [10,3600,7200,14400,28800,43200,86400,172800,345600,432000,518400,691200,864000,1036800,1296000,1296000,1296000,1209600], thRequired: genTH(18,1,1), priority: 10, usesBuilder: true },
   { scId: 1000007, category: "buildings", zh: "实验室", en: "Laboratory", buildCategory: "offense", maxLevel: 16, upgradeTimeSec: [0,3600,14400,28800,57600,86400,172800,259200,432000,518400,691200,864000,1036800,1036800,864000,864000], thRequired: genTH(16,3,1), priority: 10, usesBuilder: true },
   { scId: 1000014, category: "buildings", zh: "部落城堡", en: "Clan Castle", buildCategory: "utility", maxLevel: 14, upgradeTimeSec: [0,0,3600,14400,28800,43200,86400,172800,345600,518400,691200,864000,1036800,950400], thRequired: genTH(14,1,1), priority: 9, usesBuilder: true },
   { scId: 1000000, category: "buildings", zh: "军队营地", en: "Army Camp", buildCategory: "offense", maxLevel: 14, upgradeTimeSec: [0,300,1800,3600,14400,28800,43200,86400,172800,345600,518400,691200,864000,864000], thRequired: genTH(14,1,1), priority: 9, usesBuilder: true },
@@ -55,9 +55,9 @@ const RAW_DATA: CocItemDef[] = [
   { scId: 1000059, category: "buildings", zh: "攻城机器工坊", en: "Workshop", buildCategory: "offense", maxLevel: 7, upgradeTimeSec: [0,43200,86400,172800,432000,691200,950400], thRequired: genTH(7,12,1), priority: 7, usesBuilder: true },
   { scId: 1000068, category: "buildings", zh: "战宠小屋", en: "Pet House", buildCategory: "offense", maxLevel: 8, upgradeTimeSec: [0,43200,86400,259200,432000,691200,950400,777600], thRequired: genTH(8,14,1), priority: 7, usesBuilder: true },
   { scId: 1000070, category: "buildings", zh: "铁匠铺", en: "Blacksmith", buildCategory: "offense", maxLevel: 8, upgradeTimeSec: [0,43200,86400,259200,432000,691200,864000,864000], thRequired: genTH(8,13,1), priority: 8, usesBuilder: true },
-  { scId: 1000071, category: "buildings", zh: "英雄殿", en: "Hero Hall", buildCategory: "offense", maxLevel: 12, upgradeTimeSec: [0,43200,86400,172800,432000,691200,864000,950400,1036800,950400,864000,864000], thRequired: genTH(12,7,1), priority: 8, usesBuilder: true },
-  { scId: 1000064, category: "buildings", zh: "锻造台", en: "Forge", buildCategory: "utility", maxLevel: 5, upgradeTimeSec: [0,3600,14400,43200,86400], thRequired: genTH(5,14,1), priority: 4, usesBuilder: true },
-  { scId: 1000093, category: "buildings", zh: "助手小屋", en: "Helper Hut", buildCategory: "utility", maxLevel: 5, upgradeTimeSec: [0,3600,14400,43200,86400], thRequired: genTH(5,14,1), priority: 5, usesBuilder: true },
+  { scId: 1000071, category: "buildings", zh: "英雄殿堂", en: "Hero Hall", buildCategory: "offense", maxLevel: 12, upgradeTimeSec: [0,43200,86400,172800,432000,691200,864000,950400,1036800,950400,864000,864000], thRequired: genTH(12,7,1), priority: 8, usesBuilder: true },
+  { scId: 1000064, category: "buildings", zh: "铸币工坊", en: "Forge", buildCategory: "utility", maxLevel: 5, upgradeTimeSec: [0,3600,14400,43200,86400], thRequired: genTH(5,14,1), priority: 4, usesBuilder: true },
+  { scId: 1000093, category: "buildings", zh: "帮手小屋", en: "Helper Hut", buildCategory: "utility", maxLevel: 5, upgradeTimeSec: [0,3600,14400,43200,86400], thRequired: genTH(5,14,1), priority: 5, usesBuilder: true },
 
   // 资源建筑
   { scId: 1000002, category: "buildings", zh: "圣水收集器", en: "Elixir Collector", buildCategory: "resource", maxLevel: 17, upgradeTimeSec: estTime(17, 300, 4*DAY), thRequired: genTH(17,1,1), priority: 4, usesBuilder: true },
@@ -74,15 +74,15 @@ const RAW_DATA: CocItemDef[] = [
   { scId: 1000011, category: "buildings", zh: "法师塔", en: "Wizard Tower", buildCategory: "defense", maxLevel: 18, upgradeTimeSec: estTime(18, 3600, 9*DAY), thRequired: genTH(18,5,1), priority: 7, usesBuilder: true },
   { scId: 1000012, category: "buildings", zh: "防空火箭", en: "Air Defense", buildCategory: "defense", maxLevel: 16, upgradeTimeSec: estTime(16, 3600, 10*DAY), thRequired: genTH(16,4,1), priority: 8, usesBuilder: true },
   { scId: 1000013, category: "buildings", zh: "迫击炮", en: "Mortar", buildCategory: "defense", maxLevel: 17, upgradeTimeSec: estTime(17, 3600, 8*DAY), thRequired: genTH(17,3,1), priority: 5, usesBuilder: true },
-  { scId: 1000019, category: "buildings", zh: "隐形特斯拉电塔", en: "Hidden Tesla", buildCategory: "defense", maxLevel: 16, upgradeTimeSec: estTime(16, 3600, 14*DAY), thRequired: genTH(16,6,1), priority: 7, usesBuilder: true },
+  { scId: 1000019, category: "buildings", zh: "特斯拉电磁塔", en: "Hidden Tesla", buildCategory: "defense", maxLevel: 16, upgradeTimeSec: estTime(16, 3600, 14*DAY), thRequired: genTH(16,6,1), priority: 7, usesBuilder: true },
   { scId: 1000021, category: "buildings", zh: "X连弩", en: "X-Bow", buildCategory: "defense", maxLevel: 16, upgradeTimeSec: estTime(16, 14400, 14*DAY), thRequired: genTH(16,9,1), priority: 8, usesBuilder: true },
   { scId: 1000027, category: "buildings", zh: "地狱塔", en: "Inferno Tower", buildCategory: "defense", maxLevel: 10, upgradeTimeSec: estTime(10, 14400, 14*DAY), thRequired: genTH(10,10,1), priority: 8, usesBuilder: true },
   { scId: 1000028, category: "buildings", zh: "空气炮", en: "Air Sweeper", buildCategory: "defense", maxLevel: 9, upgradeTimeSec: estTime(9, 3600, 7*DAY), thRequired: genTH(9,6,1), priority: 4, usesBuilder: true },
-  { scId: 1000031, category: "buildings", zh: "鹰龙火炮", en: "Eagle Artillery", buildCategory: "defense", maxLevel: 8, upgradeTimeSec: estTime(8, 43200, 16*DAY), thRequired: genTH(8,11,1), priority: 9, usesBuilder: true },
+  { scId: 1000031, category: "buildings", zh: "天鹰火炮", en: "Eagle Artillery", buildCategory: "defense", maxLevel: 8, upgradeTimeSec: estTime(8, 43200, 16*DAY), thRequired: genTH(8,11,1), priority: 9, usesBuilder: true },
   { scId: 1000032, category: "buildings", zh: "炸弹塔", en: "Bomb Tower", buildCategory: "defense", maxLevel: 13, upgradeTimeSec: estTime(13, 14400, 10*DAY), thRequired: genTH(13,8,1), priority: 6, usesBuilder: true },
   { scId: 1000067, category: "buildings", zh: "散射炮", en: "Scattershot", buildCategory: "defense", maxLevel: 6, upgradeTimeSec: estTime(6, 43200, 15*DAY), thRequired: genTH(6,13,1), priority: 8, usesBuilder: true },
   { scId: 1000072, category: "buildings", zh: "法术塔", en: "Spell Tower", buildCategory: "defense", maxLevel: 6, upgradeTimeSec: estTime(6, 43200, 12*DAY), thRequired: genTH(6,14,1), priority: 7, usesBuilder: true },
-  { scId: 1000077, category: "buildings", zh: "巨石炮", en: "Monolith", buildCategory: "defense", maxLevel: 5, upgradeTimeSec: estTime(5, 43200, 16*DAY), thRequired: genTH(5,15,1), priority: 9, usesBuilder: true },
+  { scId: 1000077, category: "buildings", zh: "擎天巨柱", en: "Monolith", buildCategory: "defense", maxLevel: 5, upgradeTimeSec: estTime(5, 43200, 16*DAY), thRequired: genTH(5,15,1), priority: 9, usesBuilder: true },
   { scId: 1000015, category: "buildings", zh: "建筑工人小屋", en: "Builder Hut", buildCategory: "utility", maxLevel: 5, upgradeTimeSec: estTime(5, 3600, 14*DAY), thRequired: genTH(5,14,1), priority: 6, usesBuilder: true },
 
   // ============ 法术 spells ============
@@ -99,21 +99,21 @@ const RAW_DATA: CocItemDef[] = [
   { scId: 26000028, category: "spells", zh: "蝙蝠法术", en: "Bat Spell", buildCategory: "offense", maxLevel: 8, upgradeTimeSec: estTime(8, 3600, 12*DAY), thRequired: genTH(8,10,1), priority: 5, usesBuilder: false },
   { scId: 26000035, category: "spells", zh: "隐身法术", en: "Invisibility Spell", buildCategory: "offense", maxLevel: 6, upgradeTimeSec: estTime(6, 3600, 14*DAY), thRequired: genTH(6,12,1), priority: 6, usesBuilder: false },
   { scId: 26000053, category: "spells", zh: "召回法术", en: "Recall Spell", buildCategory: "offense", maxLevel: 6, upgradeTimeSec: estTime(6, 3600, 12*DAY), thRequired: genTH(6,13,1), priority: 5, usesBuilder: false },
-  { scId: 26000070, category: "spells", zh: "过度生长法术", en: "Overgrowth Spell", buildCategory: "offense", maxLevel: 4, upgradeTimeSec: [0,864000,1036800,1296000], thRequired: genTH(4,12,1), priority: 5, usesBuilder: false },
+  { scId: 26000070, category: "spells", zh: "蔓生法术", en: "Overgrowth Spell", buildCategory: "offense", maxLevel: 4, upgradeTimeSec: [0,864000,1036800,1296000], thRequired: genTH(4,12,1), priority: 5, usesBuilder: false },
 
   // ============ 英雄 heroes ============
   { scId: 28000000, category: "heroes", zh: "野蛮人之王", en: "Barbarian King", buildCategory: "offense", maxLevel: 105, upgradeTimeSec: estTime(105, 3600, 7*DAY), thRequired: genTH(105,7,1), priority: 8, usesBuilder: false },
   { scId: 28000001, category: "heroes", zh: "弓箭女皇", en: "Archer Queen", buildCategory: "offense", maxLevel: 105, upgradeTimeSec: estTime(105, 3600, 7*DAY), thRequired: genTH(105,9,1), priority: 9, usesBuilder: false },
-  { scId: 28000002, category: "heroes", zh: "小王子", en: "Minion Prince", buildCategory: "offense", maxLevel: 95, upgradeTimeSec: estTime(95, 3600, 7*DAY), thRequired: genTH(95,12,1), priority: 8, usesBuilder: false },
-  { scId: 28000004, category: "heroes", zh: "皇家冠军", en: "Royal Champion", buildCategory: "offense", maxLevel: 55, upgradeTimeSec: estTime(55, 3600, 7*DAY), thRequired: genTH(55,13,1), priority: 8, usesBuilder: false },
+  { scId: 28000002, category: "heroes", zh: "亡灵王子", en: "Minion Prince", buildCategory: "offense", maxLevel: 95, upgradeTimeSec: estTime(95, 3600, 7*DAY), thRequired: genTH(95,12,1), priority: 8, usesBuilder: false },
+  { scId: 28000004, category: "heroes", zh: "飞盾战神", en: "Royal Champion", buildCategory: "offense", maxLevel: 55, upgradeTimeSec: estTime(55, 3600, 7*DAY), thRequired: genTH(55,13,1), priority: 8, usesBuilder: false },
   { scId: 28000006, category: "heroes", zh: "大守护者", en: "Grand Warden", buildCategory: "offense", maxLevel: 80, upgradeTimeSec: estTime(80, 3600, 7*DAY), thRequired: genTH(80,11,1), priority: 8, usesBuilder: false },
 
   // ============ 宠物 pets ============
   ...[73000000,73000001,73000002,73000003,73000004,73000005,73000006,73000007,73000008,73000009,73000010].map((id, i) => {
     const names = [
-      ["L.A.S.S.I","L.A.S.S.I"],["电子枭","Electro Owl"],["猛犸象","Mighty Yak"],["独角兽","Unicorn"],
-      ["雪怪","Frosty"],["挖掘鼠","Diggy"],["毒蜥","Poison Lizard"],["凤凰","Phoenix"],
-      ["怒水怪","Danger Puddle"],["灵狐","Spirit Fox"],["愤怒水母","Angry Jelly"]
+      ["莱希","L.A.S.S.I"],["闪枭","Electro Owl"],["大牦","Mighty Yak"],["独角","Unicorn"],
+      ["冰牙","Frosty"],["地兽","Diggy"],["猛蜥","Poison Lizard"],["凤凰","Phoenix"],
+      ["灵狐","Spirit Fox"],["愤怒水母","Angry Jelly"],["阿啾","Sneezy"]
     ];
     return {
       scId: id, category: "pets", zh: names[i][0], en: names[i][1],

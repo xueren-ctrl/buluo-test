@@ -14,9 +14,11 @@ import type { UpgradeItem, IdleTimes, PlayerInfo, VillageSnapshot } from "@/type
 import { usePwaInstall } from "@/hooks/usePwaInstall";
 import {
   requestNotificationPermission,
+  requestNotificationPermissionDetailed,
   registerSW,
   registerPeriodicSync,
   detectNotifyStatus,
+  triggerSWNotifyCheck,
   type NotifyStatus,
 } from "@/lib/notification-system";
 import {
@@ -194,6 +196,36 @@ export default function HomePage() {
     return () => navigator.serviceWorker.removeEventListener("controllerchange", onControllerChange);
   }, []);
 
+  // ── 页面回到前台时立即跑一次 tick（补发漏掉的通知）──
+  // 浏览器在页面隐藏时会节流 setInterval（最低 1Hz 甚至暂停），
+  // 用户切回前台时立即跑一次 catchUp 确保不漏。
+  useEffect(() => {
+    let lastVisibleAt = Date.now();
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        const gap = Date.now() - lastVisibleAt;
+        // 离开超过 30 秒再回来才补发（避免快速切换抖动）
+        if (gap > 30_000 && schedulerRef.current && upgrades.length > 0) {
+          schedulerRef.current.catchUp(upgrades);
+        }
+        lastVisibleAt = Date.now();
+      } else {
+        lastVisibleAt = Date.now();
+      }
+    };
+    const onFocus = () => {
+      if (schedulerRef.current && upgrades.length > 0) {
+        schedulerRef.current.catchUp(upgrades);
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("focus", onFocus);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, [upgrades]);
+
   // ── 升级变化 → 持久化 + 通知调度器 ──
   useEffect(() => {
     if (upgrades.length === 0) return;
@@ -312,13 +344,19 @@ export default function HomePage() {
 
   // ── 开启通知权限 ─────────────────────
   const handleEnableNotify = async () => {
-    const granted = await requestNotificationPermission();
-    if (granted) {
+    const result = await requestNotificationPermissionDetailed();
+    if (result.granted) {
       setNotifyStatus((s) => ({ ...s, browserNotifGranted: true }));
-      toast.success("通知权限已开启，调度器将自动提醒", { className: "toast-success" });
+      toast.success("通知权限已开启，升级完成会自动提醒", { className: "toast-success", duration: 4000 });
+      // 立即跑一次补发（可能已经有完成的）
       schedulerRef.current?.catchUp(upgrades);
+      // 兜底：让 SW 也立即跑一次（页面关闭时也能补发）
+      triggerSWNotifyCheck();
     } else {
-      toast.error("需要通知权限才能发送提醒", { className: "toast-error" });
+      // 显示具体失败原因
+      const msg = result.message || "通知权限未授予";
+      toast.error(msg, { className: "toast-error", duration: 6000 });
+      setNotifyStatus((s) => ({ ...s, ...detectNotifyStatus() }));
     }
   };
 
@@ -420,6 +458,33 @@ export default function HomePage() {
           <div className="w-full mb-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-start gap-2">
             <span className="text-base flex-shrink-0 mt-0.5">⚠️</span>
             <span>{getStaleMessage(lastUploadAt || undefined)}</span>
+          </div>
+        )}
+
+        {/* ======== 通知权限引导（未授权时显示）======== */}
+        {upgrades.length > 0 && !notifyStatus.browserNotifGranted && (
+          <div className="w-full mb-3 p-3 rounded-xl bg-brand-600/10 border border-brand-600/30 text-xs">
+            <div className="flex items-start gap-2">
+              <span className="text-base flex-shrink-0 mt-0.5">🔔</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-brand-300 font-semibold mb-1">
+                  {notifyStatus.unsupportedReason
+                    ? `当前环境无法接收通知：${notifyStatus.unsupportedReason}`
+                    : "升级完成后将自动通知，请先开启权限"}
+                </p>
+                {notifyStatus.hint && (
+                  <p className="text-dark-400 text-[11px] leading-relaxed">{notifyStatus.hint}</p>
+                )}
+                {!notifyStatus.unsupportedReason && (
+                  <button
+                    onClick={handleEnableNotify}
+                    className="mt-2 px-3 py-1.5 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold transition-colors"
+                  >
+                    开启通知权限
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         )}
 

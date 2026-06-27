@@ -39,7 +39,7 @@ type AssetMap = Record<number, AssetInfo>;
 // 建筑 buildings (1000xxx)
 const BUILDING_MAP: AssetMap = {
   1000000: { zh: "军队营地", en: "Army Camp", type: "buildings", color: "amber", icon: "⛺" },
-  1000001: { zh: "市政厅", en: "Town Hall", type: "buildings", color: "amber", icon: "🏛️" },
+  1000001: { zh: "大本营", en: "Town Hall", type: "buildings", color: "amber", icon: "🏛️" },
   1000002: { zh: "圣水收集器", en: "Elixir Collector", type: "buildings", color: "amber", icon: "💧" },
   1000003: { zh: "圣水储存罐", en: "Elixir Storage", type: "buildings", color: "amber", icon: "🏺" },
   1000004: { zh: "金矿", en: "Gold Mine", type: "buildings", color: "amber", icon: "⛏️" },
@@ -54,7 +54,7 @@ const BUILDING_MAP: AssetMap = {
   1000013: { zh: "迫击炮", en: "Mortar", type: "buildings", color: "amber", icon: "💥" },
   1000014: { zh: "部落城堡", en: "Clan Castle", type: "buildings", color: "amber", icon: "🏰" },
   1000015: { zh: "建筑工人小屋", en: "Builder Hut", type: "buildings", color: "amber", icon: "🏚️" },
-  1000019: { zh: "隐形特斯拉电塔", en: "Hidden Tesla", type: "buildings", color: "amber", icon: "⚡" },
+  1000019: { zh: "特斯拉电磁塔", en: "Hidden Tesla", type: "buildings", color: "amber", icon: "⚡" },
   1000020: { zh: "法术工厂", en: "Spell Factory", type: "buildings", color: "indigo", icon: "⚗️" },
   1000021: { zh: "X连弩", en: "X-Bow", type: "buildings", color: "amber", icon: "🎯" },
   1000023: { zh: "暗圣水钻井", en: "Dark Elixir Drill", type: "buildings", color: "violet", icon: "🛢️" },
@@ -63,17 +63,17 @@ const BUILDING_MAP: AssetMap = {
   1000027: { zh: "地狱塔", en: "Inferno Tower", type: "buildings", color: "red", icon: "🔥" },
   1000028: { zh: "空气炮", en: "Air Sweeper", type: "buildings", color: "cyan", icon: "💨" },
   1000029: { zh: "暗法术工厂", en: "Dark Spell Factory", type: "buildings", color: "violet", icon: "⚗️" },
-  1000031: { zh: "鹰龙火炮", en: "Eagle Artillery", type: "buildings", color: "red", icon: "🦅" },
+  1000031: { zh: "天鹰火炮", en: "Eagle Artillery", type: "buildings", color: "red", icon: "🦅" },
   1000032: { zh: "炸弹塔", en: "Bomb Tower", type: "buildings", color: "red", icon: "💣" },
   1000059: { zh: "攻城机器工坊", en: "Workshop", type: "buildings", color: "zinc", icon: "🏗️" },
-  1000064: { zh: "锻造台", en: "Forge", type: "buildings", color: "amber", icon: "🔨" },
+  1000064: { zh: "铸币工坊", en: "Forge", type: "buildings", color: "amber", icon: "🔨" },
   1000067: { zh: "散射炮", en: "Scattershot", type: "buildings", color: "red", icon: "🔫" },
   1000068: { zh: "战宠小屋", en: "Pet House", type: "buildings", color: "emerald", icon: "🐾" },
   1000070: { zh: "铁匠铺", en: "Blacksmith", type: "buildings", color: "violet", icon: "⚒️" },
-  1000071: { zh: "英雄殿", en: "Hero Hall", type: "buildings", color: "yellow", icon: "🛡️" },
+  1000071: { zh: "英雄殿堂", en: "Hero Hall", type: "buildings", color: "yellow", icon: "🛡️" },
   1000072: { zh: "法术塔", en: "Spell Tower", type: "buildings", color: "indigo", icon: "🔮" },
-  1000077: { zh: "巨石炮", en: "Monolith", type: "buildings", color: "red", icon: "🗿" },
-  1000093: { zh: "助手小屋", en: "Helper Hut", type: "buildings", color: "rose", icon: "🔧" },
+  1000077: { zh: "擎天巨柱", en: "Monolith", type: "buildings", color: "red", icon: "🗿" },
+  1000093: { zh: "帮手小屋", en: "Helper Hut", type: "buildings", color: "rose", icon: "🔧" },
 };
 
 // 法术 spells (26000xxx)
@@ -91,31 +91,31 @@ const SPELL_MAP: AssetMap = {
   26000028: { zh: "蝙蝠法术", en: "Bat Spell", type: "spells", color: "slate", icon: "🦇" },
   26000035: { zh: "隐身法术", en: "Invisibility Spell", type: "spells", color: "violet", icon: "👻" },
   26000053: { zh: "召回法术", en: "Recall Spell", type: "spells", color: "indigo", icon: "🔁" },
-  26000070: { zh: "过度生长法术", en: "Overgrowth Spell", type: "spells", color: "emerald", icon: "🌱" },
+  26000070: { zh: "蔓生法术", en: "Overgrowth Spell", type: "spells", color: "emerald", icon: "🌱" },
 };
 
 // 英雄 heroes (28000xxx)
 const HERO_MAP: AssetMap = {
   28000000: { zh: "野蛮人之王", en: "Barbarian King", type: "heroes", color: "yellow", icon: "👑" },
   28000001: { zh: "弓箭女皇", en: "Archer Queen", type: "heroes", color: "yellow", icon: "👸" },
-  28000002: { zh: "小王子", en: "Minion Prince", type: "heroes", color: "yellow", icon: "🦇" },
-  28000004: { zh: "皇家冠军", en: "Royal Champion", type: "heroes", color: "yellow", icon: "🛡️" },
+  28000002: { zh: "亡灵王子", en: "Minion Prince", type: "heroes", color: "yellow", icon: "🦇" },
+  28000004: { zh: "飞盾战神", en: "Royal Champion", type: "heroes", color: "yellow", icon: "🛡️" },
   28000006: { zh: "大守护者", en: "Grand Warden", type: "heroes", color: "yellow", icon: "🧙" },
 };
 
 // 宠物 pets (73000xxx)
 const PET_MAP: AssetMap = {
-  73000000: { zh: "L.A.S.S.I", en: "L.A.S.S.I", type: "pets", color: "emerald", icon: "🐕" },
-  73000001: { zh: "电子枭", en: "Electro Owl", type: "pets", color: "emerald", icon: "🦉" },
-  73000002: { zh: "猛犸象", en: "Mighty Yak", type: "pets", color: "emerald", icon: "🐂" },
-  73000003: { zh: "独角兽", en: "Unicorn", type: "pets", color: "emerald", icon: "🦄" },
-  73000004: { zh: "雪怪", en: "Frosty", type: "pets", color: "emerald", icon: "❄️" },
-  73000005: { zh: "挖掘鼠", en: "Diggy", type: "pets", color: "emerald", icon: "🐀" },
-  73000006: { zh: "毒蜥", en: "Poison Lizard", type: "pets", color: "emerald", icon: "🦎" },
+  73000000: { zh: "莱希", en: "L.A.S.S.I", type: "pets", color: "emerald", icon: "🐕" },
+  73000001: { zh: "闪枭", en: "Electro Owl", type: "pets", color: "emerald", icon: "🦉" },
+  73000002: { zh: "大牦", en: "Mighty Yak", type: "pets", color: "emerald", icon: "🐂" },
+  73000003: { zh: "独角", en: "Unicorn", type: "pets", color: "emerald", icon: "🦄" },
+  73000004: { zh: "冰牙", en: "Frosty", type: "pets", color: "emerald", icon: "❄️" },
+  73000005: { zh: "地兽", en: "Diggy", type: "pets", color: "emerald", icon: "🐀" },
+  73000006: { zh: "猛蜥", en: "Poison Lizard", type: "pets", color: "emerald", icon: "🦎" },
   73000007: { zh: "凤凰", en: "Phoenix", type: "pets", color: "emerald", icon: "🔥" },
-  73000008: { zh: "怒水怪", en: "Danger Puddle", type: "pets", color: "emerald", icon: "💧" },
-  73000009: { zh: "灵狐", en: "Spirit Fox", type: "pets", color: "emerald", icon: "🦊" },
-  73000010: { zh: "愤怒水母", en: "Angry Jelly", type: "pets", color: "emerald", icon: "🪼" },
+  73000008: { zh: "灵狐", en: "Spirit Fox", type: "pets", color: "emerald", icon: "🦊" },
+  73000009: { zh: "愤怒水母", en: "Angry Jelly", type: "pets", color: "emerald", icon: "�" },
+  73000010: { zh: "阿啾", en: "Sneezy", type: "pets", color: "emerald", icon: "�" },
 };
 
 // 装备 equipment (106000xxx) — 含稀有度

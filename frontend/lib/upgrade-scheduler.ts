@@ -120,6 +120,13 @@ export async function createScheduler(): Promise<Scheduler> {
 
   async function tick(): Promise<void> {
     if (currentUpgrades.length === 0) return;
+
+    // 通知权限未授予：跳过整个 tick（不标记 markTierNotified，待授权后才能补发）
+    // 否则会出现"调度器跑了一次但通知没发，后续授权了也不补发"的 bug
+    if (typeof window === "undefined" || !("Notification" in window) || Notification.permission !== "granted") {
+      return;
+    }
+
     const now = new Date();
     const nowMs = now.getTime();
     const inDND = isInDND(settings, now);

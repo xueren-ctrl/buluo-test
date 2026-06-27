@@ -44,35 +44,57 @@ export function NotifySettingsPanel({
       <div className={`collapsible-content mt-3 ${open ? "expanded" : "collapsed"}`}>
         <div className="space-y-3">
           {/* 浏览器通知权限 */}
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-dark-400">
-              浏览器通知
-              {!status.browserNotifAvailable && <span className="text-red-400 ml-1">(不支持)</span>}
-              {status.browserNotifAvailable && !status.browserNotifGranted && <span className="text-amber-400 ml-1">(未授权)</span>}
-              {status.browserNotifGranted && <span className="text-green-400 ml-1">✓</span>}
-            </span>
-            <button
-              onClick={onEnableNotify}
-              disabled={!status.browserNotifAvailable}
-              className={`px-3 py-1 rounded-lg transition-colors ${
-                status.browserNotifGranted
-                  ? "bg-green-500/20 text-green-400"
-                  : status.browserNotifAvailable
-                    ? "bg-brand-600 hover:bg-brand-500 text-white"
-                    : "bg-dark-700 text-dark-600 cursor-not-allowed"
-              }`}
-            >
-              {status.browserNotifGranted ? "已开启" : "申请权限"}
-            </button>
+          <div className="space-y-1">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-dark-400">
+                浏览器通知
+                {!status.browserNotifAvailable && <span className="text-red-400 ml-1">(不支持)</span>}
+                {status.browserNotifAvailable && !status.browserNotifGranted && <span className="text-amber-400 ml-1">(未授权)</span>}
+                {status.browserNotifGranted && <span className="text-green-400 ml-1">✓</span>}
+              </span>
+              <button
+                onClick={onEnableNotify}
+                disabled={!status.browserNotifAvailable}
+                className={`px-3 py-1 rounded-lg transition-colors ${
+                  status.browserNotifGranted
+                    ? "bg-green-500/20 text-green-400"
+                    : status.browserNotifAvailable
+                      ? "bg-brand-600 hover:bg-brand-500 text-white"
+                      : "bg-dark-700 text-dark-600 cursor-not-allowed"
+                }`}
+              >
+                {status.browserNotifGranted ? "已开启" : "申请权限"}
+              </button>
+            </div>
+            {/* 不支持原因 + 引导文案 */}
+            {status.unsupportedReason && (
+              <div className="text-[11px] text-amber-400/80 leading-relaxed pl-1">
+                <p>⚠️ {status.unsupportedReason}</p>
+                {status.hint && <p className="text-dark-400 mt-0.5">{status.hint}</p>}
+              </div>
+            )}
+            {/* 已安装 PWA 提示 */}
+            {status.isInstalled && (
+              <div className="text-[11px] text-green-400/70 pl-1">
+                ✓ 已以 PWA 模式启动，可获得最佳通知体验
+              </div>
+            )}
           </div>
 
           {/* 后台同步状态 */}
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-dark-400">
-              后台同步（页面关闭时提醒）
-              {!status.periodicSyncSupported && <span className="text-amber-400 ml-1">(不支持，重开页面补发)</span>}
-              {status.periodicSyncSupported && <span className="text-green-400 ml-1">✓</span>}
-            </span>
+          <div className="space-y-1">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-dark-400">
+                后台同步（页面关闭时提醒）
+                {!status.periodicSyncSupported && <span className="text-amber-400 ml-1">(不支持)</span>}
+                {status.periodicSyncSupported && <span className="text-green-400 ml-1">✓</span>}
+              </span>
+            </div>
+            {!status.periodicSyncSupported && (
+              <div className="text-[11px] text-dark-500 leading-relaxed pl-1">
+                仅 Chrome / Edge 浏览器 + 安装 PWA 后支持。其他浏览器请保持页面打开，或重开页面时自动补发漏掉的通知。
+              </div>
+            )}
           </div>
 
           {/* 提醒层级 */}
