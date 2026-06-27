@@ -77,15 +77,17 @@ export function parseCocJson(raw: string | object, exportTime?: number): Upgrade
   const topKeys = Object.keys(data as Record<string, unknown>);
   log(`parseCocJson: 顶层字段 [${topKeys.join(", ")}]`);
 
-  // 用导出时间算完成时间，避免导入延迟导致倒计时偏差
-  // 注意: NaN ?? Date.now() 仍是 NaN，必须用 Number.isFinite 判断
-  const baseTime = Number.isFinite(exportTime as number) ? (exportTime as number) : Date.now();
-  if (Number.isFinite(exportTime as number)) {
-    const diffMin = Math.round((Date.now() - (exportTime as number)) / 60000);
-    log(`parseCocJson: 使用导出时间 ${new Date(baseTime).toLocaleString("zh-CN")} (距今 ${diffMin} 分钟)`);
-  } else {
-    log(`parseCocJson: 未指定有效导出时间，使用当前时间 ${new Date(baseTime).toLocaleString("zh-CN")}`);
-  }
+  // 优先从 JSON 顶层 timestamp 字段读取导出时间（Unix 秒）
+  // 其次用传入的 exportTime 参数，最后回退到当前时间
+  const jsonObj = data as Record<string, unknown>;
+  const jsonTs = typeof jsonObj.timestamp === "number" && jsonObj.timestamp > 0
+    ? jsonObj.timestamp * 1000
+    : null;
+  const baseTime = jsonTs
+    ?? (Number.isFinite(exportTime as number) ? (exportTime as number) : null)
+    ?? Date.now();
+  const diffMin = Math.round((Date.now() - baseTime) / 60000);
+  log(`parseCocJson: 基准时间 ${new Date(baseTime).toLocaleString("zh-CN")} (距今 ${diffMin} 分钟)${jsonTs ? " [来自JSON timestamp]" : ""}`);
 
   const upgrades: UpgradeItem[] = [];
   let idCounter = 1;
@@ -282,10 +284,14 @@ export function parseVillage(raw: string | object, exportTime?: number): Village
     throw e;
   }
 
-  const baseTime = Number.isFinite(exportTime as number) ? (exportTime as number) : Date.now();
-  if (Number.isFinite(exportTime as number)) {
-    log(`parseVillage: 使用导出时间 ${new Date(baseTime).toLocaleString("zh-CN")}`);
-  }
+  // 优先从 JSON 顶层 timestamp 字段读取导出时间（Unix 秒）
+  const jsonTs = typeof data.timestamp === "number" && data.timestamp > 0
+    ? data.timestamp * 1000
+    : null;
+  const baseTime = jsonTs
+    ?? (Number.isFinite(exportTime as number) ? (exportTime as number) : null)
+    ?? Date.now();
+  log(`parseVillage: 基准时间 ${new Date(baseTime).toLocaleString("zh-CN")}${jsonTs ? " [来自JSON timestamp]" : ""}`);
   const items: VillageItem[] = [];
 
   let townHallLevel = 0;

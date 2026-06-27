@@ -60,16 +60,10 @@ function createLocalClientId(): string {
   return `${LOCAL_CLIENT_PREFIX}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-/** 把 Date 转成 datetime-local 输入框需要的格式 YYYY-MM-DDTHH:MM */
-function toLocalDatetimeInput(d: Date): string {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
 export default function HomePage() {
   // ── 基本状态 ──────────────────────────
   const [jsonInput, setJsonInput] = useState("");
-  const [exportTime, setExportTime] = useState(() => toLocalDatetimeInput(new Date()));
+  const [exportTimeLabel, setExportTimeLabel] = useState<string | null>(null);
   const [clientId, setClientId] = useState("");
   const [loading, setLoading] = useState(false);
   const [upgrades, setUpgrades] = useState<UpgradeItem[]>([]);
@@ -212,8 +206,8 @@ export default function HomePage() {
   }, []);
 
   // ── 解析 JSON 并更新全量状态 ─────────
-  const processJson = useCallback(async (json: string, activeClientId: string, exportTs?: number) => {
-    const res = await uploadJson(json, activeClientId, exportTs);
+  const processJson = useCallback(async (json: string, activeClientId: string) => {
+    const res = await uploadJson(json, activeClientId);
     if (!res.success) throw new Error("解析失败");
 
     // 全量村庄快照（来自 api.ts 的 parseVillage，用于基地分析/评分）
@@ -227,6 +221,12 @@ export default function HomePage() {
     setPlayerInfo(res.player_info || null);
     setLastUploadAt(res.last_upload_at ?? null);
     setStaleWarning(false);
+    // 显示从 JSON timestamp 自动检测的导出时间
+    setExportTimeLabel(
+      res.export_time
+        ? new Date(res.export_time).toLocaleString("zh-CN", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })
+        : null
+    );
 
     return res;
   }, []);
@@ -244,10 +244,7 @@ export default function HomePage() {
     try {
       const activeClientId = clientId || createLocalClientId();
       if (!clientId) setClientId(activeClientId);
-      // 把 datetime-local 字符串转成时间戳传给解析器；无效时传 undefined 让解析器用当前时间
-      const rawTs = new Date(exportTime).getTime();
-      const exportTs = Number.isFinite(rawTs) ? rawTs : undefined;
-      const res = await processJson(jsonInput, activeClientId, exportTs);
+      const res = await processJson(jsonInput, activeClientId);
 
       await saveUserData({
         client_id: activeClientId,
@@ -284,8 +281,7 @@ export default function HomePage() {
     }
     setLoading(true);
     try {
-      const exportTs = new Date(exportTime).getTime();
-      await processJson(jsonInput, clientId, exportTs);
+      await processJson(jsonInput, clientId);
       toast.success("数据已重新解析", { className: "toast-success" });
     } catch {
       toast.error("刷新失败", { className: "toast-error" });
@@ -318,48 +314,8 @@ export default function HomePage() {
     setJsonInput("");
     setActiveCategory("all");
     schedulerRef.current?.reschedule([]);
+    setExportTimeLabel(null);
     toast.success("所有数据已清除", { className: "toast-success" });
-  };
-
-  // ── 根据导出时间重算所有完成时间 ──────
-  const handleRecalc = async () => {
-    if (upgrades.length === 0) {
-      toast.error("没有可重算的升级数据", { className: "toast-error" });
-      return;
-    }
-    const exportTs = new Date(exportTime).getTime();
-    if (!Number.isFinite(exportTs)) {
-      toast.error("导出时间格式不正确", { className: "toast-error" });
-      return;
-    }
-    // 用 导出时间 + timer_seconds 重算每个升级的完成时间
-    const recalculated = upgrades.map((u) => ({
-      ...u,
-      finish_time: new Date(exportTs + (u.timer_seconds || 0) * 1000).toISOString(),
-    }));
-    setUpgrades(recalculated);
-
-    // 同步更新村庄快照里的完成时间
-    if (village) {
-      const updatedVillage: VillageSnapshot = {
-        ...village,
-        capturedAt: new Date(exportTs).toISOString(),
-        items: village.items.map((item) =>
-          item.isUpgrading && item.timerSeconds
-            ? { ...item, finishTime: new Date(exportTs + item.timerSeconds * 1000).toISOString() }
-            : item
-        ),
-      };
-      setVillage(updatedVillage);
-      await saveVillage(updatedVillage);
-    }
-
-    const completedCount = recalculated.filter((u) => getRemainingSeconds(u.finish_time) <= 0).length;
-    const activeCount = recalculated.length - completedCount;
-    toast.success(
-      `已根据导出时间重算: ${activeCount} 项进行中, ${completedCount} 项已完成`,
-      { className: "toast-success" }
-    );
   };
 
   // ── 排序与分类 ───────────────────────
@@ -452,11 +408,8 @@ export default function HomePage() {
           jsonInput={jsonInput}
           onJsonChange={setJsonInput}
           onSubmit={handleSubmit}
-          onRecalc={handleRecalc}
           loading={loading}
-          exportTime={exportTime}
-          onExportTimeChange={setExportTime}
-          hasUpgrades={upgrades.length > 0}
+          exportTimeLabel={exportTimeLabel}
         />
 
         {/* ======== 升级数据面板 ======== */}

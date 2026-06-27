@@ -25,6 +25,7 @@ export interface UploadResponse {
   last_upload_at?: string | null;
   diff?: DataDiff | null;
   village?: VillageSnapshot;
+  export_time?: string | null;
 }
 
 /**

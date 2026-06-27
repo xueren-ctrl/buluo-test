@@ -91,9 +91,22 @@ export async function uploadJson(
     warn("uploadJson: parseVillage 失败，基地分析/评分将不可用", e);
   }
 
+  // 4. 从 JSON 顶层提取导出时间戳（Unix 秒），用于 UI 显示
+  let export_time: string | null = null;
+  try {
+    const parsed = JSON.parse(jsonData);
+    if (typeof parsed.timestamp === "number" && parsed.timestamp > 0) {
+      export_time = new Date(parsed.timestamp * 1000).toISOString();
+      log(`uploadJson: 检测到 JSON timestamp=${parsed.timestamp} → ${new Date(export_time).toLocaleString("zh-CN")}`);
+    }
+  } catch {
+    // ignore
+  }
+
   group("uploadJson 响应汇总", () => {
     log(`成功: true，活跃升级=${upgrades.length}，village条目=${village?.items.length ?? 0}`);
     log(`玩家: ${player_info.player_name || "(无名)"}，TH=${player_info.town_hall_level}，工人=${player_info.builder_count}`);
+    if (export_time) log(`导出时间: ${new Date(export_time).toLocaleString("zh-CN")}`);
     if (diff.new_upgrades.length) log(`diff: 新增 ${diff.new_upgrades.length}，完成 ${diff.completed_upgrades.length}，移除 ${diff.removed_upgrades.length}`);
   });
 
@@ -107,6 +120,7 @@ export async function uploadJson(
     last_upload_at: new Date().toISOString(),
     diff,
     village,
+    export_time,
   };
 }
 
