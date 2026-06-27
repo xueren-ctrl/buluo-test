@@ -193,9 +193,9 @@ const UNIT_MAP: AssetMap = {
 
 // 助力 helpers (124000xxx)
 const HELPER_MAP: AssetMap = {
-  124000000: { zh: "助手 1", en: "Helper 1", type: "helpers", color: "rose", icon: "🔧" },
-  124000001: { zh: "助手 2", en: "Helper 2", type: "helpers", color: "rose", icon: "🛠️" },
-  124000002: { zh: "助手 3", en: "Helper 3", type: "helpers", color: "rose", icon: "⚙️" },
+  124000000: { zh: "建筑工人学徒", en: "Builder's Apprentice", type: "helpers", color: "rose", icon: "🔧" },
+  124000001: { zh: "实验室助手", en: "Lab Assistant", type: "helpers", color: "rose", icon: "🛠️" },
+  124000002: { zh: "锻造助手", en: "Forge Assistant", type: "helpers", color: "rose", icon: "⚙️" },
 };
 
 // 夜世界建筑 buildings2 (1000xxx, 1000033+)
@@ -336,21 +336,18 @@ export function inferCategory(scId: number): string {
   return "unknown";
 }
 
-// ── 三级 fallback 查找 ───────────────────────
+// ── 严格按 category 查找（防止 buildings/buildings2 ID 冲突）──
 export function getItemNameById(
   category: string,
   dataId: number | null | undefined
 ): AssetInfo | null {
   if (dataId == null) return null;
 
-  // 1. 精确 category 查找（解决 siege/units 共享 4000xxx 冲突）
+  // 1. 精确 category 查找（必须匹配，不做跨类别 fallback）
   const catMap = BY_CATEGORY[category];
   if (catMap && catMap[dataId]) return catMap[dataId];
 
-  // 2. 全局查找
-  if (ITEM_MAP[dataId]) return ITEM_MAP[dataId];
-
-  // 3. fallback：返回未知
+  // 2. fallback：返回未知（不全局查找，避免 buildings2 的 ID 被误匹配到 buildings）
   return null;
 }
 
