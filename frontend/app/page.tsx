@@ -239,7 +239,9 @@ export default function HomePage() {
       data_id: u.data_id ?? null,
     }));
     saveUpgrades(raw);
-    schedulerRef.current?.reschedule(upgrades);
+    // 用 catchUp 代替 reschedule：除了更新升级列表，还立即跑一次 tick
+    // 确保新解析出的"已完成"项能立即触发通知（不用等 30s interval）
+    schedulerRef.current?.catchUp(upgrades);
   }, [upgrades]);
 
   // ── 数据过期检测 ──────────────────────

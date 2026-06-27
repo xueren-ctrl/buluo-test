@@ -137,10 +137,20 @@ export async function createScheduler(): Promise<Scheduler> {
 
     for (const u of currentUpgrades) {
       const finishMs = new Date(u.finish_time).getTime();
+      const alreadyComplete = nowMs >= finishMs; // 升级已完成
 
       for (const def of TIER_DEFS) {
         // 设置开关
         if (!settings[TIER_ENABLED_FIELD[def.tier]]) continue;
+
+        // 已完成的升级：跳过 pre_* 通知（发"即将完成"没意义），直接走 complete
+        if (alreadyComplete && (def.tier === "pre_30m" || def.tier === "pre_10m")) {
+          const key = notifyStateKey(u.category, u.data_id ?? null, u.item_level, def.tier);
+          if (!await isTierNotified(key)) {
+            await markTierNotified(key); // 标记为已发，避免后续补发
+          }
+          continue;
+        }
 
         const fireMs = finishMs + def.offsetSec * 1000;
         if (nowMs < fireMs) continue; // 还没到时间

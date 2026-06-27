@@ -258,10 +258,18 @@ export function sendBrowserNotification(
   }
 
   // 优先通过 SW 显示（已安装时 SW 的 showNotification 可在页面后台也工作）
+  // 若 SW 未注册或 ready 在 1s 内未 resolve（开发模式或 SW 异常），回退到 Notification API
   const showViaSW = async () => {
     try {
-      if ("serviceWorker" in navigator) {
-        const reg = await navigator.serviceWorker.ready;
+      if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
+        // 给 ready 加 1s 超时，避免 SW 未激活时无限 pending
+        const readyWithTimeout = Promise.race([
+          navigator.serviceWorker.ready,
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("SW ready timeout")), 1000)
+          ),
+        ]);
+        const reg = await readyWithTimeout;
         await reg.showNotification(title, {
           body,
           icon: "/icons/icon-192.png",
