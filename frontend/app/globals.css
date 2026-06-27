@@ -2,14 +2,63 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ===================== 主题 CSS 变量 ===================== */
+:root {
+  /* 浅色主题 */
+  --bg-primary: #FAF8F3;
+  --bg-secondary: #F0EBE0;
+  --card-bg: #FFFFFF;
+  --card-border: #E8E0D0;
+  --color-gold: #C8922A;
+  --color-gold-light: #F0B429;
+  --color-gold-alpha: rgba(200, 146, 42, 0.12);
+  --color-blue: #2563EB;
+  --text-primary: #1C1408;
+  --text-secondary: #6B5E4E;
+  --text-muted: #9C8E7E;
+  --color-success: #16A34A;
+  --color-danger: #DC2626;
+  --input-bg: #FDFCF9;
+  --toggle-off: #D1C9BD;
+  --shadow-card: 0 2px 12px rgba(28, 20, 8, 0.08);
+  --shadow-hover: 0 8px 32px rgba(28, 20, 8, 0.12);
+}
+
+:root[data-theme="dark"] {
+  /* 深色主题 */
+  --bg-primary: #0F1117;
+  --bg-secondary: #161B27;
+  --card-bg: #1A1F2E;
+  --card-border: #2D3748;
+  --color-gold: #F0B429;
+  --color-gold-light: #FBBF24;
+  --color-gold-alpha: rgba(240, 180, 41, 0.12);
+  --color-blue: #60A5FA;
+  --text-primary: #F0EBE3;
+  --text-secondary: #9CA3AF;
+  --text-muted: #6B7280;
+  --color-success: #4ADE80;
+  --color-danger: #EF4444;
+  --input-bg: #141820;
+  --toggle-off: #374151;
+  --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.3);
+  --shadow-hover: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
 /* ===================== 全局基础 ===================== */
 body {
-  @apply bg-dark-950 text-dark-100;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
-    Arial, "Noto Sans SC", sans-serif;
-  /* 禁止移动端双击缩放 */
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: "Noto Sans SC", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+  transition: background 0.3s, color 0.3s;
+}
+
+/* 数字 / 倒计时字体 */
+.font-mono-num {
+  font-family: "Inter", monospace;
+  font-variant-numeric: tabular-nums;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -25,36 +74,41 @@ body {
   width: 4px;
 }
 ::-webkit-scrollbar-track {
-  @apply bg-dark-900;
+  background: var(--bg-secondary);
 }
 ::-webkit-scrollbar-thumb {
-  @apply bg-dark-600 rounded-full;
+  background: var(--color-gold);
+  border-radius: 9999px;
+  opacity: 0.5;
 }
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-dark-500;
+  background: var(--color-gold-light);
 }
 
 /* ===================== 基础卡片 ===================== */
 .glass-card {
-  @apply bg-dark-850/80 backdrop-blur-xl border border-dark-700/50 rounded-2xl;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 20px;
+  box-shadow: var(--shadow-card);
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .glass-card:hover {
-  border-color: rgba(99, 102, 241, 0.3);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 16px rgba(99, 102, 241, 0.08);
+  border-color: var(--color-gold-alpha);
+  box-shadow: var(--shadow-hover);
   transform: translateY(-1px);
 }
 
 /* ===================== 发光边框 ===================== */
 .glow-border {
-  @apply border border-brand-500/30;
-  box-shadow: 0 0 15px rgba(99, 102, 241, 0.15), inset 0 0 15px rgba(99, 102, 241, 0.03);
+  border: 1px solid var(--color-gold-alpha);
+  box-shadow: 0 0 15px var(--color-gold-alpha);
 }
 
 /* ===================== 渐变背景 ===================== */
 .gradient-bg {
-  background: linear-gradient(135deg, #020617 0%, #0f172a 50%, #020617 100%);
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 50%, var(--bg-primary) 100%);
   background-attachment: fixed;
 }
 
@@ -65,11 +119,12 @@ body {
 }
 
 .skeleton {
-  @apply bg-dark-700/50 rounded-lg;
+  background: var(--bg-secondary);
+  border-radius: 8px;
   background-image: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(99, 102, 241, 0.06) 50%,
+    var(--color-gold-alpha) 50%,
     transparent 100%
   );
   background-size: 200% 100%;
@@ -95,7 +150,10 @@ body {
 
 /* ===================== 升级进度条 ===================== */
 .progress-bar {
-  @apply h-1.5 bg-dark-800 rounded-full overflow-hidden;
+  height: 6px;
+  background: var(--bg-secondary);
+  border-radius: 9999px;
+  overflow: hidden;
 }
 
 .progress-bar-fill {
@@ -112,12 +170,11 @@ body {
 .gradient-title {
   background: linear-gradient(
     90deg,
-    #fbbf24,
-    #f59e0b,
-    #818cf8,
-    #6366f1,
-    #f59e0b,
-    #fbbf24
+    var(--color-gold-light),
+    var(--color-gold),
+    var(--color-gold-light),
+    var(--color-gold),
+    var(--color-gold-light)
   );
   background-size: 200% auto;
   -webkit-background-clip: text;
@@ -156,54 +213,181 @@ body {
 
 /* ===================== 统计卡片 ===================== */
 .stat-card {
-  @apply glass-card p-4 md:p-5 text-center;
-  @apply hover:scale-[1.02] active:scale-[0.98];
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 20px;
+  box-shadow: var(--shadow-card);
+  padding: 1rem;
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.stat-card:hover {
+  transform: scale(1.02);
+}
+.stat-card:active {
+  transform: scale(0.98);
 }
 
 /* ===================== 升级项卡片 ===================== */
 .upgrade-card {
-  @apply glass-card overflow-hidden;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 20px;
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .upgrade-card:hover {
   transform: translateY(-2px) scale(1.005);
+  border-color: var(--color-gold-alpha);
 }
 
 /* ===================== 按钮样式 ===================== */
 .btn-primary {
-  @apply bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400
-         text-white font-semibold rounded-xl transition-all duration-200
-         active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+  background: linear-gradient(135deg, var(--color-gold), var(--color-gold-light));
+  color: #1C1408;
+  font-weight: 600;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px var(--color-gold-alpha);
+}
+
+.btn-primary:hover {
+  transform: scale(1.02);
+}
+
+.btn-primary:active {
+  transform: scale(0.97);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .btn-secondary {
-  @apply glass-card border border-dark-600 hover:border-brand-500/50
-         text-dark-100 font-medium rounded-xl transition-all duration-200
-         active:scale-[0.97] disabled:opacity-50;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  color: var(--text-primary);
+  font-weight: 500;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+  border-color: var(--color-gold);
+}
+
+.btn-secondary:active {
+  transform: scale(0.97);
+}
+
+/* ===================== 输入框 ===================== */
+.input-field {
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  color: var(--text-primary);
+  transition: border-color 0.2s ease;
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: var(--color-gold);
+  box-shadow: 0 0 0 3px var(--color-gold-alpha);
+}
+
+/* ===================== Toggle 开关 ===================== */
+.toggle-switch {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  border-radius: 9999px;
+  background: var(--toggle-off);
+  transition: background 0.3s ease;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.toggle-switch.on {
+  background: linear-gradient(135deg, var(--color-gold), var(--color-gold-light));
+}
+
+.toggle-switch .toggle-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 9999px;
+  background: #FFFFFF;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.toggle-switch.on .toggle-knob {
+  transform: translateX(20px);
+}
+
+/* ===================== 底部导航栏 ===================== */
+.nav-bar {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background: var(--card-bg);
+  border-top: 1px solid var(--color-gold-alpha);
 }
 
 /* ===================== Toast 增强 ===================== */
 .toast-success {
-  @apply bg-dark-800 border border-green-500/30 text-dark-100;
-  box-shadow: 0 4px 16px rgba(34, 197, 94, 0.15);
+  background: var(--card-bg);
+  border: 1px solid var(--color-success);
+  color: var(--text-primary);
+  box-shadow: 0 4px 16px rgba(22, 163, 74, 0.15);
 }
 
 .toast-error {
-  @apply bg-dark-800 border border-red-500/30 text-dark-100;
-  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.15);
+  background: var(--card-bg);
+  border: 1px solid var(--color-danger);
+  color: var(--text-primary);
+  box-shadow: 0 4px 16px rgba(220, 38, 38, 0.15);
 }
 
 /* ===================== 信息层级: 主内容聚焦 ===================== */
 .focus-zone {
-  @apply transition-all duration-300;
+  transition: all 0.3s;
 }
 
 .focus-zone.dimmed {
-  @apply opacity-40 pointer-events-none;
+  opacity: 0.4;
+  pointer-events: none;
 }
+
+/* ===================== 卡片入场动画 fadeUp ===================== */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* 各卡片错开 60ms */
+.animate-fade-up:nth-child(1) { animation-delay: 0ms; }
+.animate-fade-up:nth-child(2) { animation-delay: 60ms; }
+.animate-fade-up:nth-child(3) { animation-delay: 120ms; }
+.animate-fade-up:nth-child(4) { animation-delay: 180ms; }
+.animate-fade-up:nth-child(5) { animation-delay: 240ms; }
+.animate-fade-up:nth-child(6) { animation-delay: 300ms; }
+.animate-fade-up:nth-child(7) { animation-delay: 360ms; }
+.animate-fade-up:nth-child(8) { animation-delay: 420ms; }
 
 /* ===================== Tabular nums (倒计时) ===================== */
 .tabular-nums {
@@ -213,29 +397,27 @@ body {
 /* ===================== 移动端优化 ===================== */
 @media (max-width: 768px) {
   .glass-card {
-    @apply rounded-xl;
+    border-radius: 16px;
   }
   .upgrade-card {
-    @apply p-3;
+    padding: 0.75rem;
   }
   main {
     padding-left: 0.75rem !important;
     padding-right: 0.75rem !important;
   }
-  /* 移动端更大的触摸目标 */
   .btn-primary, .btn-secondary {
-    @apply py-3 text-sm;
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+    font-size: 0.875rem;
     min-height: 44px;
   }
-  /* 移动端卡片更宽松间距 */
   .stat-card {
-    @apply p-3;
+    padding: 0.75rem;
   }
-  /* 移动端隐藏滚动条 */
   ::-webkit-scrollbar {
     display: none;
   }
-  /* 触摸反馈：active 状态轻微缩小 */
   .stat-card:active,
   .glass-card:active {
     transform: scale(0.98);
@@ -283,3 +465,16 @@ button {
     font-size: 16px !important;
   }
 }
+
+/* ===================== 文字颜色辅助类 ===================== */
+.text-primary { color: var(--text-primary); }
+.text-secondary { color: var(--text-secondary); }
+.text-muted { color: var(--text-muted); }
+.text-gold { color: var(--color-gold); }
+.text-gold-light { color: var(--color-gold-light); }
+.text-success { color: var(--color-success); }
+.text-danger { color: var(--color-danger); }
+.bg-card { background: var(--card-bg); }
+.bg-primary { background: var(--bg-primary); }
+.bg-secondary { background: var(--bg-secondary); }
+.border-card { border-color: var(--card-border); }

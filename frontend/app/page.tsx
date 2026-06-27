@@ -50,6 +50,7 @@ import { CollapsibleGuide } from "@/components/CollapsibleGuide";
 import { EmptyState } from "@/components/EmptyState";
 import { BaseAnalysisPanel } from "@/components/BaseAnalysisPanel";
 import { BaseScoreCard } from "@/components/BaseScoreCard";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 /* ================================================================
    首页 — "部落冲突升级规划助手" PWA 应用级体验
@@ -467,6 +468,11 @@ export default function HomePage() {
 
       <main className="min-h-screen flex flex-col px-3 py-5 md:px-6 md:py-8 max-w-2xl mx-auto app-shell">
 
+        {/* ======== 右上角主题切换按钮 ======== */}
+        <div className="fixed top-4 right-4 z-50">
+          <ThemeToggle />
+        </div>
+
         {/* ======== 顶部 PWA 安装条（已合并到下方通知引导）======== */}
 
         {/* ======== Hero 区域 ======== */}
@@ -592,17 +598,19 @@ export default function HomePage() {
         )}
 
         {/* ======== 上传区域 ======== */}
-        <UploadSection
-          jsonInput={jsonInput}
-          onJsonChange={setJsonInput}
-          onSubmit={handleSubmit}
-          loading={loading}
-          exportTimeLabel={exportTimeLabel}
-        />
+        <div className="animate-fade-up">
+          <UploadSection
+            jsonInput={jsonInput}
+            onJsonChange={setJsonInput}
+            onSubmit={handleSubmit}
+            loading={loading}
+            exportTimeLabel={exportTimeLabel}
+          />
+        </div>
 
         {/* ======== 升级数据面板 ======== */}
         {upgrades.length > 0 && (
-          <>
+          <div className="animate-fade-up space-y-4">
             <StatsCards
               playerInfo={playerInfo}
               activeCount={activeUpgrades.length}
@@ -653,12 +661,13 @@ export default function HomePage() {
 
             {/* 最近完成 */}
             <CompletedList items={completedUpgrades} />
-          </>
+          </div>
         )}
 
         {/* ======== 通知设置面板 ======== */}
-        <NotifySettingsPanel
-          status={notifyStatus}
+        <div className="animate-fade-up">
+          <NotifySettingsPanel
+            status={notifyStatus}
           settings={settings}
           onUpdateSettings={updateSettings}
           onEnableNotify={handleEnableNotify}
@@ -667,10 +676,11 @@ export default function HomePage() {
             toast.success("已清除通知去重记录，将重新提醒", { className: "toast-success" });
           }}
         />
+        </div>
 
         {/* ======== 工具栏 ======== */}
         {upgrades.length > 0 && (
-          <div className="w-full flex gap-2 mb-4">
+          <div className="w-full flex gap-2 mb-4 animate-fade-up">
             <button onClick={handleClearAll} className="btn-secondary text-xs py-2 flex-1 text-red-400 hover:text-red-300 border-red-500/20 hover:border-red-500/40">
               🗑️ 清除所有数据
             </button>
