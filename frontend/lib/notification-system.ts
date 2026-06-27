@@ -243,6 +243,8 @@ export async function requestNotificationPermissionDetailed(): Promise<Permissio
 }
 
 // ── 发送浏览器本地通知 ──────────────────────
+// 移动端 Chrome/Edge 必须 SW showNotification 才能弹出通知栏
+// new Notification() 在移动端不弹出通知栏（仅桌面端有效）
 export function sendBrowserNotification(
   title: string,
   body: string,
@@ -250,23 +252,27 @@ export function sendBrowserNotification(
 ): void {
   if (typeof window === "undefined" || !("Notification" in window)) {
     warn("通知未发送：浏览器不支持 Notification API");
+    showInPageToast(title, body);
     return;
   }
   if (Notification.permission !== "granted") {
     warn(`通知未发送：权限未授予（当前=${Notification.permission}），title="${title}"`);
+    showInPageToast(title, body);
     return;
   }
 
-  // 优先通过 SW 显示（已安装时 SW 的 showNotification 可在页面后台也工作）
-  // 若 SW 未注册或 ready 在 1s 内未 resolve（开发模式或 SW 异常），回退到 Notification API
+  // 移动端必须用 SW showNotification 才能弹出通知栏
+  // 不检查 navigator.serviceWorker.controller，因为首次加载时 controller 是 null
+  // 但 SW 可能已注册并激活，ready 会在 SW 激活后 resolve
   const showViaSW = async () => {
     try {
-      if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
-        // 给 ready 加 1s 超时，避免 SW 未激活时无限 pending
+      if ("serviceWorker" in navigator) {
+        // 等待 SW ready（3s 超时），ready 在 SW 注册并激活后 resolve
+        // 即使当前页面还没被 SW 接管（controller 是 null），ready 也能 resolve
         const readyWithTimeout = Promise.race([
           navigator.serviceWorker.ready,
           new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error("SW ready timeout")), 1000)
+            setTimeout(() => reject(new Error("SW ready timeout")), 3000)
           ),
         ]);
         const reg = await readyWithTimeout;
@@ -278,16 +284,25 @@ export function sendBrowserNotification(
           requireInteraction: false,
           data: { ...data, createdAt: Date.now() },
         });
-        log("通知已通过 SW 发送:", title);
+        log("通知已通过 SW showNotification 发送:", title);
         return;
       }
     } catch (e) {
-      warn("SW showNotification 失败，回退到普通 Notification:", e);
+      warn("SW showNotification 失败，回退到 Notification API:", e);
     }
+    // fallback: new Notification（桌面端有效，移动端可能不弹出通知栏）
     fallbackNotification(title, body, data);
   };
 
   showViaSW();
+}
+
+// ── 页面内 toast 兜底（系统通知不可用时）──
+function showInPageToast(title: string, body: string): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(
+    new CustomEvent("coc-inpage-notification", { detail: { title, body } })
+  );
 }
 
 function fallbackNotification(
@@ -295,7 +310,10 @@ function fallbackNotification(
   body: string,
   data?: Record<string, unknown>
 ): void {
-  if (typeof window === "undefined" || !("Notification" in window) || Notification.permission !== "granted") return;
+  if (typeof window === "undefined" || !("Notification" in window) || Notification.permission !== "granted") {
+    showInPageToast(title, body);
+    return;
+  }
   try {
     const notif = new Notification(title, {
       body,
@@ -312,8 +330,11 @@ function fallbackNotification(
     };
     setTimeout(() => notif.close(), 30_000);
     log("通知已通过 Notification API 发送:", title);
+    // 移动端 new Notification 可能不弹出通知栏，同时显示页面内 toast 兜底
+    showInPageToast(title, body);
   } catch (e) {
     warn("Notification API 失败:", e);
+    showInPageToast(title, body);
   }
 }
 

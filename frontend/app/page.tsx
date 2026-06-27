@@ -226,6 +226,20 @@ export default function HomePage() {
     };
   }, [upgrades]);
 
+  // ── 页面内 toast 兜底（系统通知不可用时）──
+  useEffect(() => {
+    const onInPageNotif = (e: Event) => {
+      const { title, body } = (e as CustomEvent).detail;
+      toast(`${title}\n${body}`, {
+        icon: "🔔",
+        duration: 8000,
+        className: "toast-success",
+      });
+    };
+    window.addEventListener("coc-inpage-notification", onInPageNotif);
+    return () => window.removeEventListener("coc-inpage-notification", onInPageNotif);
+  }, []);
+
   // ── 升级变化 → 持久化 + 通知调度器 ──
   useEffect(() => {
     if (upgrades.length === 0) return;
