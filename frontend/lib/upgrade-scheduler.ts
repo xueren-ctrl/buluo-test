@@ -121,12 +121,9 @@ export async function createScheduler(): Promise<Scheduler> {
   async function tick(): Promise<void> {
     if (currentUpgrades.length === 0) return;
 
-    // 通知权限未授予：跳过整个 tick（不标记 markTierNotified，待授权后才能补发）
-    // 否则会出现"调度器跑了一次但通知没发，后续授权了也不补发"的 bug
-    if (typeof window === "undefined" || !("Notification" in window) || Notification.permission !== "granted") {
-      return;
-    }
-
+    // 不再在此处检查通知权限：
+    // sendBrowserNotification 会始终显示页面内 toast（确保用户看到提醒），
+    // 仅在权限授予时尝试系统通知。markTierNotified 也只在实际发送后调用。
     const now = new Date();
     const nowMs = now.getTime();
     const inDND = isInDND(settings, now);

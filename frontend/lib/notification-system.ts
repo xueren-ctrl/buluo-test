@@ -245,30 +245,28 @@ export async function requestNotificationPermissionDetailed(): Promise<Permissio
 // ── 发送浏览器本地通知 ──────────────────────
 // 移动端 Chrome/Edge 必须 SW showNotification 才能弹出通知栏
 // new Notification() 在移动端不弹出通知栏（仅桌面端有效）
+// 始终同时显示页面内 toast，确保用户一定能看到提醒
 export function sendBrowserNotification(
   title: string,
   body: string,
   data?: Record<string, unknown>
 ): void {
+  // 始终显示页面内 toast（确保用户一定能看到提醒）
+  showInPageToast(title, body);
+
   if (typeof window === "undefined" || !("Notification" in window)) {
     warn("通知未发送：浏览器不支持 Notification API");
-    showInPageToast(title, body);
     return;
   }
   if (Notification.permission !== "granted") {
     warn(`通知未发送：权限未授予（当前=${Notification.permission}），title="${title}"`);
-    showInPageToast(title, body);
     return;
   }
 
-  // 移动端必须用 SW showNotification 才能弹出通知栏
-  // 不检查 navigator.serviceWorker.controller，因为首次加载时 controller 是 null
-  // 但 SW 可能已注册并激活，ready 会在 SW 激活后 resolve
+  // 尝试通过 SW showNotification 发送系统通知（PWA 模式下弹通知栏）
   const showViaSW = async () => {
     try {
       if ("serviceWorker" in navigator) {
-        // 等待 SW ready（3s 超时），ready 在 SW 注册并激活后 resolve
-        // 即使当前页面还没被 SW 接管（controller 是 null），ready 也能 resolve
         const readyWithTimeout = Promise.race([
           navigator.serviceWorker.ready,
           new Promise<never>((_, reject) =>
@@ -311,7 +309,6 @@ function fallbackNotification(
   data?: Record<string, unknown>
 ): void {
   if (typeof window === "undefined" || !("Notification" in window) || Notification.permission !== "granted") {
-    showInPageToast(title, body);
     return;
   }
   try {
@@ -330,11 +327,8 @@ function fallbackNotification(
     };
     setTimeout(() => notif.close(), 30_000);
     log("通知已通过 Notification API 发送:", title);
-    // 移动端 new Notification 可能不弹出通知栏，同时显示页面内 toast 兜底
-    showInPageToast(title, body);
   } catch (e) {
     warn("Notification API 失败:", e);
-    showInPageToast(title, body);
   }
 }
 
