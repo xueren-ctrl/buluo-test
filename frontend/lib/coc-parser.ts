@@ -61,7 +61,7 @@ export interface ParseResult {
   idle_times: IdleTimes;
 }
 
-export function parseCocJson(raw: string | object): UpgradeItem[] {
+export function parseCocJson(raw: string | object, exportTime?: number): UpgradeItem[] {
   const inputType = typeof raw === "string" ? "string" : "object";
   const inputSize = typeof raw === "string" ? raw.length : JSON.stringify(raw).length;
   log(`parseCocJson: 开始解析，输入类型=${inputType}，大小=${inputSize} 字符`);
@@ -77,7 +77,15 @@ export function parseCocJson(raw: string | object): UpgradeItem[] {
   const topKeys = Object.keys(data as Record<string, unknown>);
   log(`parseCocJson: 顶层字段 [${topKeys.join(", ")}]`);
 
-  const now = Date.now();
+  // 用导出时间算完成时间，避免导入延迟导致倒计时偏差
+  const baseTime = exportTime ?? Date.now();
+  if (exportTime) {
+    const diffMin = Math.round((Date.now() - exportTime) / 60000);
+    log(`parseCocJson: 使用导出时间 ${new Date(exportTime).toLocaleString("zh-CN")} (距今 ${diffMin} 分钟)`);
+  } else {
+    log(`parseCocJson: 未指定导出时间，使用当前时间 ${new Date(baseTime).toLocaleString("zh-CN")}`);
+  }
+
   const upgrades: UpgradeItem[] = [];
   let idCounter = 1;
   let totalSkipped = 0;
@@ -111,7 +119,7 @@ export function parseCocJson(raw: string | object): UpgradeItem[] {
           : null;
       const lvl = getLevel(item);
       const name = resolveName(cat, dataId);
-      const finishMs = now + timer * 1000;
+      const finishMs = baseTime + timer * 1000;
 
       log(`    → [${cat}] ${name} (scId=${dataId}, lvl=${lvl}, timer=${fmtDuration(timer)})`);
 
@@ -231,12 +239,12 @@ export function calculateIdleTimes(upgrades: UpgradeItem[]): IdleTimes {
   return result;
 }
 
-export function parseFull(raw: string | object): ParseResult {
+export function parseFull(raw: string | object, exportTime?: number): ParseResult {
   group("parseFull 开始", () => {
     log(`输入类型=${typeof raw === "string" ? "string" : "object"}，大小=${typeof raw === "string" ? raw.length : JSON.stringify(raw).length} 字符`);
   });
 
-  const upgrades = parseCocJson(raw);
+  const upgrades = parseCocJson(raw, exportTime);
   const playerInfo = extractPlayerInfo(raw);
   playerInfo.active_upgrades = upgrades.filter(
     (u) => new Date(u.finish_time).getTime() > Date.now()
@@ -261,7 +269,7 @@ export function parseFull(raw: string | object): ParseResult {
  * - parseVillage 提取所有条目（含已完成/未升级的），用于基地分析/评分/推荐
  * - 不修改现有 parseCocJson/parseFull，向后兼容
  */
-export function parseVillage(raw: string | object): VillageSnapshot {
+export function parseVillage(raw: string | object, exportTime?: number): VillageSnapshot {
   const inputSize = typeof raw === "string" ? raw.length : JSON.stringify(raw).length;
   log(`parseVillage: 开始全量解析，输入大小=${inputSize} 字符`);
 
@@ -273,7 +281,10 @@ export function parseVillage(raw: string | object): VillageSnapshot {
     throw e;
   }
 
-  const now = Date.now();
+  const baseTime = exportTime ?? Date.now();
+  if (exportTime) {
+    log(`parseVillage: 使用导出时间 ${new Date(exportTime).toLocaleString("zh-CN")}`);
+  }
   const items: VillageItem[] = [];
 
   let townHallLevel = 0;
@@ -327,7 +338,7 @@ export function parseVillage(raw: string | object): VillageSnapshot {
       if (timer != null) {
         villageItem.targetLevel = currentLevel + 1;
         villageItem.timerSeconds = timer;
-        villageItem.finishTime = new Date(now + timer * 1000).toISOString();
+        villageItem.finishTime = new Date(baseTime + timer * 1000).toISOString();
         catUpgrading++;
         log(`    → [${cat}] scId=${scId} lvl=${currentLevel}→${currentLevel + 1} timer=${fmtDuration(timer)}`);
       }
@@ -353,7 +364,7 @@ export function parseVillage(raw: string | object): VillageSnapshot {
 
   const upgradingCount = items.filter((i) => i.isUpgrading).length;
   const snapshot: VillageSnapshot = {
-    capturedAt: new Date(now).toISOString(),
+    capturedAt: new Date(baseTime).toISOString(),
     townHallLevel,
     builderCount: builderCount > 0 ? builderCount : 5,
     playerTag,

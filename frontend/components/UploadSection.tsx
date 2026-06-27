@@ -1,5 +1,5 @@
 /**
- * 上传区域 — JSON 输入 + 解析按钮（可折叠）
+ * 上传区域 — JSON 输入 + 导出时间 + 解析按钮（可折叠）
  */
 import { useState, useRef } from "react";
 
@@ -8,11 +8,15 @@ export function UploadSection({
   onJsonChange,
   onSubmit,
   loading,
+  exportTime,
+  onExportTimeChange,
 }: {
   jsonInput: string;
   onJsonChange: (v: string) => void;
   onSubmit: () => void;
   loading: boolean;
+  exportTime: string;
+  onExportTimeChange: (v: string) => void;
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const jsonRef = useRef<HTMLTextAreaElement>(null);
@@ -40,6 +44,21 @@ export function UploadSection({
             rows={8}
             className="w-full bg-dark-900/60 border border-dark-600 rounded-xl px-3.5 py-2.5 text-xs text-dark-100 placeholder-dark-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30 transition-all font-mono resize-y"
           />
+        </div>
+
+        <div className="mb-3">
+          <label className="block text-xs text-dark-400 mb-1">
+            📅 数据导出时间 <span className="text-amber-400">(不是刚刚导出的请修改)</span>
+          </label>
+          <input
+            type="datetime-local"
+            value={exportTime}
+            onChange={(e) => onExportTimeChange(e.target.value)}
+            className="w-full bg-dark-900/60 border border-dark-600 rounded-xl px-3.5 py-2.5 text-xs text-dark-100 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30 transition-all"
+          />
+          <p className="text-[10px] text-dark-500 mt-1">
+            倒计时从这里开始算，确保准确。默认为当前时间。
+          </p>
         </div>
 
         <button

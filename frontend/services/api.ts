@@ -59,17 +59,18 @@ let _lastUpgrades: UpgradeItem[] = [];
 export async function uploadJson(
   jsonData: string,
   clientId: string,
+  exportTime?: number,
   _playerTag?: string,
   _playerName?: string
 ): Promise<UploadResponse> {
-  log(`uploadJson: 收到请求，clientId=${clientId}，JSON 大小=${jsonData.length} 字符`);
+  log(`uploadJson: 收到请求，clientId=${clientId}，JSON 大小=${jsonData.length} 字符${exportTime ? `，导出时间=${new Date(exportTime).toLocaleString("zh-CN")}` : ""}`);
 
   // 1. 解析活跃升级
   let upgrades: UpgradeItem[];
   let player_info: PlayerInfo;
   let idle_times: IdleTimes;
   try {
-    const result = parseFull(jsonData);
+    const result = parseFull(jsonData, exportTime);
     upgrades = result.upgrades;
     player_info = result.player_info;
     idle_times = result.idle_times;
@@ -85,7 +86,7 @@ export async function uploadJson(
   // 3. 全量村庄解析（用于基地分析/评分/推荐）
   let village: VillageSnapshot | undefined;
   try {
-    village = parseVillage(jsonData);
+    village = parseVillage(jsonData, exportTime);
   } catch (e) {
     warn("uploadJson: parseVillage 失败，基地分析/评分将不可用", e);
   }

@@ -60,9 +60,16 @@ function createLocalClientId(): string {
   return `${LOCAL_CLIENT_PREFIX}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
+/** 把 Date 转成 datetime-local 输入框需要的格式 YYYY-MM-DDTHH:MM */
+function toLocalDatetimeInput(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export default function HomePage() {
   // ── 基本状态 ──────────────────────────
   const [jsonInput, setJsonInput] = useState("");
+  const [exportTime, setExportTime] = useState(() => toLocalDatetimeInput(new Date()));
   const [clientId, setClientId] = useState("");
   const [loading, setLoading] = useState(false);
   const [upgrades, setUpgrades] = useState<UpgradeItem[]>([]);
@@ -205,8 +212,8 @@ export default function HomePage() {
   }, []);
 
   // ── 解析 JSON 并更新全量状态 ─────────
-  const processJson = useCallback(async (json: string, activeClientId: string) => {
-    const res = await uploadJson(json, activeClientId);
+  const processJson = useCallback(async (json: string, activeClientId: string, exportTs?: number) => {
+    const res = await uploadJson(json, activeClientId, exportTs);
     if (!res.success) throw new Error("解析失败");
 
     // 全量村庄快照（来自 api.ts 的 parseVillage，用于基地分析/评分）
@@ -237,7 +244,9 @@ export default function HomePage() {
     try {
       const activeClientId = clientId || createLocalClientId();
       if (!clientId) setClientId(activeClientId);
-      const res = await processJson(jsonInput, activeClientId);
+      // 把 datetime-local 字符串转成时间戳传给解析器
+      const exportTs = new Date(exportTime).getTime();
+      const res = await processJson(jsonInput, activeClientId, exportTs);
 
       await saveUserData({
         client_id: activeClientId,
@@ -272,7 +281,8 @@ export default function HomePage() {
     }
     setLoading(true);
     try {
-      await processJson(jsonInput, clientId);
+      const exportTs = new Date(exportTime).getTime();
+      await processJson(jsonInput, clientId, exportTs);
       toast.success("数据已重新解析", { className: "toast-success" });
     } catch {
       toast.error("刷新失败", { className: "toast-error" });
@@ -399,6 +409,8 @@ export default function HomePage() {
           onJsonChange={setJsonInput}
           onSubmit={handleSubmit}
           loading={loading}
+          exportTime={exportTime}
+          onExportTimeChange={setExportTime}
         />
 
         {/* ======== 升级数据面板 ======== */}
