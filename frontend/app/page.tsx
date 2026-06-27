@@ -244,8 +244,9 @@ export default function HomePage() {
     try {
       const activeClientId = clientId || createLocalClientId();
       if (!clientId) setClientId(activeClientId);
-      // 把 datetime-local 字符串转成时间戳传给解析器
-      const exportTs = new Date(exportTime).getTime();
+      // 把 datetime-local 字符串转成时间戳传给解析器；无效时传 undefined 让解析器用当前时间
+      const rawTs = new Date(exportTime).getTime();
+      const exportTs = Number.isFinite(rawTs) ? rawTs : undefined;
       const res = await processJson(jsonInput, activeClientId, exportTs);
 
       await saveUserData({
@@ -267,7 +268,9 @@ export default function HomePage() {
         toast.success(`解析成功! 发现 ${res.upgrades.length} 个升级项`, { className: "toast-success" });
       }
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "解析失败", { className: "toast-error" });
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("[CoC] 解析失败:", err);
+      toast.error(`解析失败: ${msg}`, { className: "toast-error", duration: 6000 });
     } finally {
       setLoading(false);
     }

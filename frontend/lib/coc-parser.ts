@@ -78,12 +78,13 @@ export function parseCocJson(raw: string | object, exportTime?: number): Upgrade
   log(`parseCocJson: 顶层字段 [${topKeys.join(", ")}]`);
 
   // 用导出时间算完成时间，避免导入延迟导致倒计时偏差
-  const baseTime = exportTime ?? Date.now();
-  if (exportTime) {
-    const diffMin = Math.round((Date.now() - exportTime) / 60000);
-    log(`parseCocJson: 使用导出时间 ${new Date(exportTime).toLocaleString("zh-CN")} (距今 ${diffMin} 分钟)`);
+  // 注意: NaN ?? Date.now() 仍是 NaN，必须用 Number.isFinite 判断
+  const baseTime = Number.isFinite(exportTime as number) ? (exportTime as number) : Date.now();
+  if (Number.isFinite(exportTime as number)) {
+    const diffMin = Math.round((Date.now() - (exportTime as number)) / 60000);
+    log(`parseCocJson: 使用导出时间 ${new Date(baseTime).toLocaleString("zh-CN")} (距今 ${diffMin} 分钟)`);
   } else {
-    log(`parseCocJson: 未指定导出时间，使用当前时间 ${new Date(baseTime).toLocaleString("zh-CN")}`);
+    log(`parseCocJson: 未指定有效导出时间，使用当前时间 ${new Date(baseTime).toLocaleString("zh-CN")}`);
   }
 
   const upgrades: UpgradeItem[] = [];
@@ -281,9 +282,9 @@ export function parseVillage(raw: string | object, exportTime?: number): Village
     throw e;
   }
 
-  const baseTime = exportTime ?? Date.now();
-  if (exportTime) {
-    log(`parseVillage: 使用导出时间 ${new Date(exportTime).toLocaleString("zh-CN")}`);
+  const baseTime = Number.isFinite(exportTime as number) ? (exportTime as number) : Date.now();
+  if (Number.isFinite(exportTime as number)) {
+    log(`parseVillage: 使用导出时间 ${new Date(baseTime).toLocaleString("zh-CN")}`);
   }
   const items: VillageItem[] = [];
 
