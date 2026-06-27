@@ -439,6 +439,13 @@ export function isStandalone(): boolean {
   return checkStandalone();
 }
 
+// ── 是否运行在 iOS 环境（iPhone/iPad/iPod）──
+export function isIOS(): boolean {
+  if (typeof navigator === "undefined") return false;
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+}
+
 // ── 立即让 SW 跑一次后台通知检查（兜底）──
 //  适用场景：页面打开时调用，确保 SW 至少跑一次 runPeriodicCheck
 export async function triggerSWNotifyCheck(): Promise<void> {

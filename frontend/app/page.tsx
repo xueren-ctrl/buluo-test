@@ -19,6 +19,8 @@ import {
   registerPeriodicSync,
   detectNotifyStatus,
   triggerSWNotifyCheck,
+  isIOS,
+  isStandalone,
   type NotifyStatus,
 } from "@/lib/notification-system";
 import {
@@ -166,6 +168,8 @@ export default function HomePage() {
               setNotifyStatus(detectNotifyStatus(reg));
             }
           });
+          // App 打开时立即让 SW 跑一次通知检查，补发所有已到期但未发送的通知
+          triggerSWNotifyCheck();
         }
       } catch {
         // ignore
@@ -199,6 +203,7 @@ export default function HomePage() {
   // ── 页面回到前台时立即跑一次 tick（补发漏掉的通知）──
   // 浏览器在页面隐藏时会节流 setInterval（最低 1Hz 甚至暂停），
   // 用户切回前台时立即跑一次 catchUp 确保不漏。
+  // 同时向 SW 发送 RUN_PERIODIC_CHECK，让 SW 也补发通知。
   useEffect(() => {
     let lastVisibleAt = Date.now();
     const onVisibility = () => {
@@ -207,6 +212,7 @@ export default function HomePage() {
         // 离开超过 30 秒再回来才补发（避免快速切换抖动）
         if (gap > 30_000 && schedulerRef.current && upgrades.length > 0) {
           schedulerRef.current.catchUp(upgrades);
+          triggerSWNotifyCheck();
         }
         lastVisibleAt = Date.now();
       } else {
@@ -216,6 +222,7 @@ export default function HomePage() {
     const onFocus = () => {
       if (schedulerRef.current && upgrades.length > 0) {
         schedulerRef.current.catchUp(upgrades);
+        triggerSWNotifyCheck();
       }
     };
     document.addEventListener("visibilitychange", onVisibility);
@@ -223,6 +230,36 @@ export default function HomePage() {
     return () => {
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("focus", onFocus);
+    };
+  }, [upgrades]);
+
+  // ── 30 分钟内即将到期的升级项：用 setTimeout 精确触发 ──
+  // 调度器的 setInterval 是 30s tick，最迟 30s 后才发通知。
+  // 对于即将到期的项，用 setTimeout 精确到秒，到期后立即触发 SW 通知检查。
+  useEffect(() => {
+    if (upgrades.length === 0) return;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const now = Date.now();
+    const WINDOW_MS = 30 * 60 * 1000; // 30 分钟窗口
+
+    for (const u of upgrades) {
+      const finishMs = new Date(u.finish_time).getTime();
+      const diff = finishMs - now;
+      // 只对 0~30 分钟内到期的项设置精确 timer
+      if (diff > 0 && diff <= WINDOW_MS) {
+        const t = setTimeout(() => {
+          // 到期后立即让页面调度器和 SW 都跑一次检查
+          if (schedulerRef.current) {
+            schedulerRef.current.catchUp(upgrades);
+          }
+          triggerSWNotifyCheck();
+        }, diff + 500); // +500ms 确保过了 finish_time
+        timers.push(t);
+      }
+    }
+
+    return () => {
+      for (const t of timers) clearTimeout(t);
     };
   }, [upgrades]);
 
@@ -460,6 +497,26 @@ export default function HomePage() {
           <div className="w-full mb-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-start gap-2">
             <span className="text-base flex-shrink-0 mt-0.5">⚠️</span>
             <span>{getStaleMessage(lastUploadAt || undefined)}</span>
+          </div>
+        )}
+
+        {/* ======== iOS 非 PWA 模式引导横幅 ======== */}
+        {isIOS() && !isStandalone() && (
+          <div className="w-full mb-3 p-3 rounded-xl bg-blue-500/10 border border-blue-500/30 text-xs">
+            <div className="flex items-start gap-2">
+              <span className="text-base flex-shrink-0 mt-0.5">📱</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-blue-300 font-semibold mb-1">
+                  请添加到主屏幕，才能接收升级完成通知
+                </p>
+                <p className="text-dark-400 text-[11px] leading-relaxed">
+                  iOS Safari 不支持网页通知，必须安装为 PWA 后才能在系统通知中心收到提醒。
+                </p>
+                <p className="text-blue-300 text-[11px] font-semibold mt-1">
+                  📲 点击底部分享按钮 → 添加到主屏幕
+                </p>
+              </div>
+            </div>
           </div>
         )}
 
