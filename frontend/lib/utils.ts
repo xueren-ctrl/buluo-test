@@ -27,9 +27,9 @@ export function formatRemaining(seconds: number): string {
 }
 
 /**
- * 格式化剩余秒数为紧凑时间字符串（含秒数，确保动态可见）
+ * 格式化剩余秒数为紧凑时间字符串（精确到秒，确保动态可见）
  * 3661   -> "1时1分1秒"
- * 86461  -> "1天0时1分"
+ * 86461  -> "1天0时1分1秒"
  * 75     -> "1分15秒"
  */
 export function formatCompactRemaining(seconds: number): string {
@@ -40,16 +40,10 @@ export function formatCompactRemaining(seconds: number): string {
   const minutes = Math.floor((seconds % 3600) / 60);
   const secs = seconds % 60;
 
-  // ≥1天: 天 + 时 + 分（不显示秒，避免抖动太大）
-  if (days > 0) {
-    if (hours > 0 || minutes > 0) return `${days}天${hours}时${minutes}分`;
-    return `${days}天${hours}时`;
-  }
-  // ≥1小时: 时 + 分 + 秒
+  // 所有情况都显示秒，确保精确到秒动态更新
+  if (days > 0) return `${days}天${hours}时${minutes}分${secs}秒`;
   if (hours > 0) return `${hours}时${minutes}分${secs}秒`;
-  // ≥1分钟: 分 + 秒
   if (minutes > 0) return `${minutes}分${secs}秒`;
-  // <1分钟: 秒
   return `${secs}秒`;
 }
 
