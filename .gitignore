@@ -50,6 +50,9 @@ frontend/.env.local
 # version.json 由根目录在构建时拷贝到 frontend/public，不提交副本
 frontend/public/version.json
 
+# frontend/android 是指向根 android/ 的 junction（cap sync 需要，但内容已在 android/ 跟踪）
+frontend/android/
+
 # Lock files (optional, uncomment if desired)
 # *.lock
 
