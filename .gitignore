@@ -34,8 +34,6 @@ Thumbs.db
 nul
 device.ini
 
-<<<<<<< HEAD
-=======
 # Logs
 *.log
 npm-debug.log*
@@ -45,10 +43,12 @@ frontend/node_modules/
 frontend/.next/
 frontend/out/
 
->>>>>>> 3a75304 (feat: 升级规划助手 Phase 1 + 实时倒计时 + 部署优化)
 # Build output
 db.json
 frontend/.env.local
+
+# version.json 由根目录在构建时拷贝到 frontend/public，不提交副本
+frontend/public/version.json
 
 # Lock files (optional, uncomment if desired)
 # *.lock

@@ -1,0 +1,15 @@
+{
+  "version": "1.1.0",
+  "apkUrl": "https://github.com/xueren-ctrl/buluo/releases/latest",
+  "changelog": [
+    {
+      "version": "1.1.0",
+      "date": "2026-06-28",
+      "notes": [
+        "monorepo 重构：抽离 shared 核心逻辑层",
+        "PWA 与 Android APP 共用同一套 parser / scheduler / analyzer",
+        "统一 version.json 作为双端更新源"
+      ]
+    }
+  ]
+}

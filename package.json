@@ -1,0 +1,15 @@
+{
+  "name": "buluo",
+  "version": "1.1.0",
+  "private": true,
+  "description": "部落冲突升级助手 - monorepo (PWA + Android APK)",
+  "scripts": {
+    "release": "node scripts/release.js",
+    "release:patch": "node scripts/release.js patch",
+    "release:minor": "node scripts/release.js minor",
+    "release:major": "node scripts/release.js major"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import Link from "next/link";
 import toast, { Toaster } from "react-hot-toast";
 import { uploadJson } from "@/services/api";
 import { analyzeBase } from "@/lib/base-analyzer";
@@ -12,9 +13,11 @@ import {
 } from "@/lib/utils";
 import type { UpgradeItem, IdleTimes, PlayerInfo, VillageSnapshot } from "@/types";
 import {
-  registerSW,
-  registerPeriodicSync,
-  triggerSWNotifyCheck,
+  createNotificationChannels,
+  setupLocalNotificationListener,
+  detectNotifyStatusAsync,
+  requestNotificationPermission,
+  type NotifyStatus,
 } from "@/lib/notification-system";
 import {
   saveUpgrades,
@@ -24,11 +27,32 @@ import {
   loadSettings,
   saveSettings,
   saveVillage,
+  markTierNotified,
+  clearNotifyState,
+  addJsonHistory,
+  upsertAccount,
+  setActiveAccount,
   type RawUpgradeRecord,
   type SchedulerSettings,
   type RestoredState,
+  type AccountRecord,
 } from "@/lib/indexeddb";
 import { createScheduler, type Scheduler } from "@/lib/upgrade-scheduler";
+import {
+  checkForUpdate,
+  CURRENT_VERSION,
+  openApkDownload,
+  openReleasesPage,
+  formatApkSize,
+  formatPublishedAt,
+  renderMarkdown,
+  type UpdateCheckResult,
+} from "@/lib/update-checker";
+import {
+  detectBatteryOptimization,
+  openBatteryOptimizationSettings,
+  type BatteryOptimizationStatus,
+} from "@/lib/battery-optimizer";
 
 import { UploadSection } from "@/components/UploadSection";
 import { StatsCards } from "@/components/StatsCards";
@@ -42,6 +66,9 @@ import { EmptyState } from "@/components/EmptyState";
 import { BaseAnalysisPanel } from "@/components/BaseAnalysisPanel";
 import { BaseScoreCard } from "@/components/BaseScoreCard";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { NotifySettingsPanel } from "@/components/NotifySettingsPanel";
+import { AccountSwitcher } from "@/components/AccountSwitcher";
+import { Modal } from "@/components/Modal";
 
 /* ================================================================
    首页 — "部落冲突升级规划助手" PWA 应用级体验
@@ -70,6 +97,14 @@ export default function HomePage() {
   const [settings, setSettings] = useState<SchedulerSettings | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [village, setVillage] = useState<VillageSnapshot | null>(null);
+  const [notifyStatus, setNotifyStatus] = useState<NotifyStatus | null>(null);
+
+  // ── v1.1 新增状态 ─────────────────────
+  const [activeAccount, setActiveAccount] = useState<AccountRecord | null>(null);
+  const [batteryStatus, setBatteryStatus] = useState<BatteryOptimizationStatus | null>(null);
+  const [showBatteryDialog, setShowBatteryDialog] = useState(false);
+  const [updateResult, setUpdateResult] = useState<UpdateCheckResult | null>(null);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
 
   const schedulerRef = useRef<Scheduler | null>(null);
 
@@ -140,15 +175,25 @@ export default function HomePage() {
         // 调度器失败不阻塞 UI
       }
 
-      // 3. 注册 Service Worker + Periodic Sync
-      // 新 SW 激活后自动刷新页面一次（无需用户操作），用 sessionStorage 防止死循环
+      // 3. 初始化 Capacitor 本地通知系统
+      //    - 创建 Android 通知通道（幂等，每次启动都调用）
+      //    - 检测权限状态更新 UI
+      //    - 注册 LocalNotifications 触发监听：通知被系统触发时自动 markTierNotified，
+      //      避免下次打开 APP 时 catch-up tick 重复发送
       try {
-        const reg = await registerSW();
+        await createNotificationChannels();
         if (cancelled) return;
-        if (reg) {
-          registerPeriodicSync().catch(() => {});
-          // App 打开时立即让 SW 跑一次通知检查，补发所有已到期但未发送的通知
-          triggerSWNotifyCheck();
+        const status = await detectNotifyStatusAsync();
+        if (cancelled) return;
+        setNotifyStatus(status);
+        if (status.browserNotifGranted) {
+          setupLocalNotificationListener(async (notif) => {
+            const extra = notif.extra || {};
+            const notifyKey = extra.notifyKey as string | undefined;
+            if (notifyKey) {
+              try { await markTierNotified(notifyKey); } catch { /* ignore */ }
+            }
+          }).catch(() => {});
         }
       } catch {
         // ignore
@@ -160,29 +205,131 @@ export default function HomePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── SW 更新自动刷新（无需用户操作）──────
-  // 新 SW 激活后，自动刷新页面一次加载最新资源；用 sessionStorage 防止死循环
+  // ── v1.1 启动后：电池优化检测 + 检查更新（异步，不阻塞 UI）──
   useEffect(() => {
-    if (!("serviceWorker" in navigator)) return;
-    let refreshed = false;
-    const onControllerChange = () => {
-      if (refreshed) return;
-      if (sessionStorage.getItem("sw-refreshed") === "1") {
-        sessionStorage.removeItem("sw-refreshed");
-        return;
+    let cancelled = false;
+
+    async function postInit() {
+      // 1. 电池优化检测（首次启动只弹一次提示）
+      try {
+        const status = await detectBatteryOptimization();
+        if (cancelled) return;
+        setBatteryStatus(status);
+        if (status.isOptimized) {
+          // 国产厂商设备：检查是否已展示过引导
+          const shownKey = "coc_battery_guide_shown";
+          const shown = localStorage.getItem(shownKey);
+          if (!shown) {
+            setShowBatteryDialog(true);
+            localStorage.setItem(shownKey, "1");
+          }
+        }
+      } catch (e) {
+        console.warn("电池优化检测失败", e);
       }
-      refreshed = true;
-      sessionStorage.setItem("sw-refreshed", "1");
-      window.location.reload();
+
+      // 2. GitHub 自动检查更新（6 小时缓存，启动时静默调用）
+      try {
+        const result = await checkForUpdate(false);
+        if (cancelled) return;
+        setUpdateResult(result);
+        if (result.hasUpdate && result.release) {
+          setShowUpdateModal(true);
+        }
+      } catch (e) {
+        console.warn("检查更新失败", e);
+      }
+    }
+
+    // 延迟 1.5s 启动，避免与首屏渲染竞争
+    const timer = setTimeout(postInit, 1500);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
     };
-    navigator.serviceWorker.addEventListener("controllerchange", onControllerChange);
-    return () => navigator.serviceWorker.removeEventListener("controllerchange", onControllerChange);
   }, []);
 
-  // ── 页面回到前台时立即跑一次 tick（补发漏掉的通知）──
-  // 浏览器在页面隐藏时会节流 setInterval（最低 1Hz 甚至暂停），
+  // ── v1.1 监听账号切换事件 ──
+  // AccountSwitcher 切换账号后触发，重新加载首页所有数据
+  useEffect(() => {
+    const handler = async () => {
+      try {
+        const restored = await loadAll();
+        setClientId(restored.userData?.client_id || createLocalClientId());
+        setSettings(restored.settings);
+        if (restored.userData?.last_json_raw) {
+          setJsonInput(restored.userData.last_json_raw);
+        } else {
+          setJsonInput("");
+        }
+        if (restored.userData?.last_upload_at) {
+          setLastUploadAt(restored.userData.last_upload_at);
+        } else {
+          setLastUploadAt(null);
+        }
+        setUpgrades(restored.upgrades as UpgradeItem[]);
+        if (restored.village?.snapshot) {
+          setVillage(restored.village.snapshot);
+        } else {
+          setVillage(null);
+        }
+        setPlayerInfo(null);
+        setIdleTimes(null);
+        setExportTimeLabel(null);
+        // 通知调度器重新加载升级
+        if (restored.upgrades.length > 0) {
+          await schedulerRef.current?.catchUp(restored.upgrades as UpgradeItem[]);
+        } else {
+          schedulerRef.current?.reschedule([]);
+        }
+      } catch (e) {
+        console.error("账号切换后重载失败", e);
+      }
+    };
+    window.addEventListener("coc-account-switched", handler);
+    return () => window.removeEventListener("coc-account-switched", handler);
+  }, []);
+
+  // ── v1.1 历史记录页面恢复入口 ──
+  // 用户在 /history 页点"恢复"时，把 JSON 写入 sessionStorage，
+  // 跳回首页时此 effect 读取并自动解析
+  useEffect(() => {
+    const restoreJson = sessionStorage.getItem("coc_restore_json");
+    if (!restoreJson) return;
+    // 一次性消费
+    sessionStorage.removeItem("coc_restore_json");
+    sessionStorage.removeItem("coc_restore_player_tag");
+    // 注入到输入框并自动解析
+    setJsonInput(restoreJson);
+    setTimeout(() => {
+      handleSubmitRef.current?.(restoreJson);
+    }, 300);
+  }, []);
+
+  // ── v1.1 账号标签（用于通知标题前缀，如【主号】）──
+  const accountLabel = useMemo(() => {
+    if (!activeAccount) return "";
+    const name = activeAccount.player_name?.trim();
+    if (!name) return "";
+    return `【${name}】`;
+  }, [activeAccount]);
+
+  // handleSubmit 引用（供上面历史恢复 effect 调用）
+  const handleSubmitRef = useRef<((json?: string) => void) | null>(null);
+
+  // ── v1.1 账号标签变化 → 同步到调度器（通知标题前缀）──
+  useEffect(() => {
+    if (!schedulerRef.current) return;
+    schedulerRef.current.setAccountLabel(accountLabel).catch(() => {});
+  }, [accountLabel]);
+
+  // ── SW 更新自动刷新 ──（已移除：Capacitor 模式下不依赖 Service Worker，
+  //     APP 升级直接通过 APK 重装覆盖；新版 web 资源在 cap sync 时已更新）
+
+  // ── 页面回到前台时立即跑一次 catchUp（补发漏掉的通知）──
+  // 浏览器/WebView 在页面隐藏时会节流 setInterval（最低 1Hz 甚至暂停），
   // 用户切回前台时立即跑一次 catchUp 确保不漏。
-  // 同时向 SW 发送 RUN_PERIODIC_CHECK，让 SW 也补发通知。
+  // catchUp 内部还会重新调度未来通知到 LocalNotifications，确保 APP 关闭时仍能提醒。
   useEffect(() => {
     let lastVisibleAt = Date.now();
     const onVisibility = () => {
@@ -191,7 +338,6 @@ export default function HomePage() {
         // 离开超过 30 秒再回来才补发（避免快速切换抖动）
         if (gap > 30_000 && schedulerRef.current && upgrades.length > 0) {
           schedulerRef.current.catchUp(upgrades);
-          triggerSWNotifyCheck();
         }
         lastVisibleAt = Date.now();
       } else {
@@ -201,7 +347,6 @@ export default function HomePage() {
     const onFocus = () => {
       if (schedulerRef.current && upgrades.length > 0) {
         schedulerRef.current.catchUp(upgrades);
-        triggerSWNotifyCheck();
       }
     };
     document.addEventListener("visibilitychange", onVisibility);
@@ -212,35 +357,10 @@ export default function HomePage() {
     };
   }, [upgrades]);
 
-  // ── 30 分钟内即将到期的升级项：用 setTimeout 精确触发 ──
-  // 调度器的 setInterval 是 30s tick，最迟 30s 后才发通知。
-  // 对于即将到期的项，用 setTimeout 精确到秒，到期后立即触发 SW 通知检查。
-  useEffect(() => {
-    if (upgrades.length === 0) return;
-    const timers: ReturnType<typeof setTimeout>[] = [];
-    const now = Date.now();
-    const WINDOW_MS = 30 * 60 * 1000; // 30 分钟窗口
-
-    for (const u of upgrades) {
-      const finishMs = new Date(u.finish_time).getTime();
-      const diff = finishMs - now;
-      // 只对 0~30 分钟内到期的项设置精确 timer
-      if (diff > 0 && diff <= WINDOW_MS) {
-        const t = setTimeout(() => {
-          // 到期后立即让页面调度器和 SW 都跑一次检查
-          if (schedulerRef.current) {
-            schedulerRef.current.catchUp(upgrades);
-          }
-          triggerSWNotifyCheck();
-        }, diff + 500); // +500ms 确保过了 finish_time
-        timers.push(t);
-      }
-    }
-
-    return () => {
-      for (const t of timers) clearTimeout(t);
-    };
-  }, [upgrades]);
+  // ── 即将到期的升级项：精确提醒 ──
+  // 不再使用 setTimeout 精确触发（用户要求），
+  // 而是依赖 scheduler 在 upgrades 变化时把所有未来通知点
+  // 调度到 Capacitor LocalNotifications（AlarmManager 驱动，系统级精度）。
 
   // ── 页面内 toast 兜底（系统通知不可用时）──
   useEffect(() => {
@@ -288,6 +408,36 @@ export default function HomePage() {
     });
   }, []);
 
+  // ── 开启通知权限（Capacitor LocalNotifications）──
+  const handleEnableNotify = useCallback(async () => {
+    try {
+      const granted = await requestNotificationPermission();
+      const status = await detectNotifyStatusAsync();
+      setNotifyStatus(status);
+      if (granted) {
+        toast.success("通知权限已开启", { className: "toast-success" });
+        // 重新调度未来通知
+        if (upgrades.length > 0) {
+          await schedulerRef.current?.rescheduleFuture(upgrades);
+        }
+      } else {
+        toast.error("通知权限未开启，请在系统设置中开启", { className: "toast-error", duration: 6000 });
+      }
+    } catch (e) {
+      toast.error("请求通知权限失败", { className: "toast-error" });
+    }
+  }, [upgrades]);
+
+  // ── 重置通知去重状态，便于重新触发通知 ──
+  const handleClearNotifyState = useCallback(async () => {
+    await clearNotifyState();
+    // 重新调度未来通知
+    if (upgrades.length > 0) {
+      await schedulerRef.current?.rescheduleFuture(upgrades);
+    }
+    toast.success("通知去重已重置", { className: "toast-success" });
+  }, [upgrades]);
+
   // ── 解析 JSON 并更新全量状态 ─────────
   const processJson = useCallback(async (json: string, activeClientId: string) => {
     const res = await uploadJson(json, activeClientId);
@@ -315,28 +465,86 @@ export default function HomePage() {
   }, []);
 
   // ── 上传（本地解析）──────────────────
-  const handleSubmit = async () => {
-    if (!jsonInput.trim()) {
+  // 支持传入 json 参数（用于历史记录恢复）
+  const handleSubmit = async (overrideJson?: string) => {
+    const raw = (overrideJson ?? jsonInput).trim();
+    if (!raw) {
       toast.error("请粘贴 CoC JSON 数据", { className: "toast-error" });
       return;
     }
-    try { JSON.parse(jsonInput); }
+    try { JSON.parse(raw); }
     catch { toast.error("JSON 格式不正确", { className: "toast-error" }); return; }
 
     setLoading(true);
     try {
       const activeClientId = clientId || createLocalClientId();
       if (!clientId) setClientId(activeClientId);
-      const res = await processJson(jsonInput, activeClientId);
+      const res = await processJson(raw, activeClientId);
 
       await saveUserData({
         client_id: activeClientId,
         player_tag: res.player_info?.player_tag ?? null,
         player_name: res.player_info?.player_name ?? null,
-        last_json_raw: jsonInput,
+        last_json_raw: raw,
         last_upload_at: res.last_upload_at ?? null,
         last_sync_at: new Date().toISOString(),
       });
+
+      // v1.1：写入 JSON 历史记录（最多 5 条，自动淘汰）
+      try {
+        // 算一下基地评分
+        let baseScore: number | null = null;
+        let baseGrade: string | null = null;
+        if (res.village) {
+          const score = scoreBase(res.village);
+          baseScore = score.total;
+          baseGrade = score.grade;
+        }
+        await addJsonHistory({
+          imported_at: new Date().toISOString(),
+          player_tag: res.player_info?.player_tag ?? "anon",
+          player_name: res.player_info?.player_name ?? "(无名)",
+          town_hall_level: res.player_info?.town_hall_level ?? 0,
+          json_raw: raw,
+          active_upgrades: res.upgrades.length,
+          base_score: baseScore,
+          base_grade: baseGrade,
+        });
+      } catch (e) {
+        console.warn("写入 JSON 历史失败", e);
+      }
+
+      // v1.1：写入多账号 store
+      try {
+        const playerTag = res.player_info?.player_tag || "anon";
+        const playerName = res.player_info?.player_name || "(无名玩家)";
+        const townHall = res.player_info?.town_hall_level ?? 0;
+        let baseScoreVal: number | null = null;
+        let baseGradeVal: string | null = null;
+        if (res.village) {
+          const sc = scoreBase(res.village);
+          baseScoreVal = sc.total;
+          baseGradeVal = sc.grade;
+        }
+        await upsertAccount({
+          player_tag: playerTag,
+          player_name: playerName,
+          town_hall_level: townHall,
+          last_import_time: new Date().toISOString(),
+          village_data: res.village ?? null,
+          upgrades: res.upgrades,
+          base_score: baseScoreVal,
+          base_grade: baseGradeVal,
+          active: true,
+          json_raw: raw,
+        });
+        // 更新本地状态（让 AccountSwitcher 立即看到新账号）
+        const { getActiveAccount } = await import("@/lib/indexeddb");
+        const active = await getActiveAccount();
+        setActiveAccount(active || null);
+      } catch (e) {
+        console.warn("写入账号 store 失败", e);
+      }
 
       const diff = res.diff;
       if (diff?.new_upgrades?.length || diff?.completed_upgrades?.length) {
@@ -355,6 +563,8 @@ export default function HomePage() {
       setLoading(false);
     }
   };
+  // 同步 handleSubmit 到 ref，供历史记录恢复 effect 调用
+  handleSubmitRef.current = handleSubmit;
 
   // ── 重新解析当前 JSON（刷新）──────────
   const handleRefresh = async () => {
@@ -420,12 +630,29 @@ export default function HomePage() {
 
       <main className="min-h-screen flex flex-col px-3 py-5 md:px-6 md:py-8 max-w-2xl mx-auto app-shell">
 
-        {/* ======== 右上角主题切换按钮 ======== */}
-        <div className="fixed top-4 right-4 z-50">
-          <ThemeToggle />
+        {/* ======== 顶部工具栏：账号切换 + 历史入口 + 设置入口 + 主题切换 ======== */}
+        <div className="flex items-center justify-between gap-2 mb-4">
+          <AccountSwitcher onAccountChange={(acc) => setActiveAccount(acc)} />
+          <div className="flex items-center gap-1.5">
+            <Link
+              href="/history"
+              className="coc-btn-secondary !py-1.5 !px-3 text-xs flex items-center gap-1"
+              aria-label="历史记录"
+            >
+              <span>📜</span>
+              <span className="hidden sm:inline">历史</span>
+            </Link>
+            <Link
+              href="/settings"
+              className="coc-btn-secondary !py-1.5 !px-3 text-xs flex items-center gap-1"
+              aria-label="设置"
+            >
+              <span>⚙️</span>
+              <span className="hidden sm:inline">设置</span>
+            </Link>
+            <ThemeToggle />
+          </div>
         </div>
-
-        {/* ======== 顶部 PWA 安装条（已合并到下方通知引导）======== */}
 
         {/* ======== Hero 区域 ======== */}
         <header className="text-center mb-5">
@@ -506,6 +733,17 @@ export default function HomePage() {
             {/* 工人 / 实验室 */}
             {idleTimes && <BuilderLabStatus idleTimes={idleTimes} />}
 
+            {/* 通知设置（Capacitor 本地通知：APP 关闭也能提醒）*/}
+            {notifyStatus && settings && (
+              <NotifySettingsPanel
+                status={notifyStatus}
+                settings={settings}
+                onUpdateSettings={updateSettings}
+                onEnableNotify={handleEnableNotify}
+                onClearNotifyState={handleClearNotifyState}
+              />
+            )}
+
             {/* 操作栏 */}
             <div className="w-full flex gap-2 mb-4">
               <button onClick={handleRefresh} disabled={loading} className="coc-btn-secondary flex-1 py-2 text-sm">
@@ -559,9 +797,131 @@ export default function HomePage() {
         )}
 
         <footer className="mt-4 text-center text-muted text-xs pb-6 safe-area-bottom">
-          <p>纯前端 PWA · 数据本地存储 · 无需服务器</p>
+          <p>纯本地安卓 APP · 数据本地存储 · 离线运行 · 无需服务器</p>
+          <p className="mt-1 text-[10px]">v{CURRENT_VERSION}</p>
         </footer>
       </main>
+
+      {/* ======== 电池优化引导弹窗（国产厂商首次启动时显示）======== */}
+      <Modal
+        open={showBatteryDialog}
+        onClose={() => setShowBatteryDialog(false)}
+        title="后台运行提醒"
+        footer={
+          <>
+            <button
+              onClick={() => setShowBatteryDialog(false)}
+              className="coc-btn-secondary text-xs !py-2 !px-4"
+            >
+              稍后
+            </button>
+            <button
+              onClick={() => {
+                setShowBatteryDialog(false);
+                openBatteryOptimizationSettings();
+              }}
+              className="coc-btn text-xs !py-2 !px-4"
+            >
+              去设置
+            </button>
+            <Link
+              href="/settings"
+              onClick={() => setShowBatteryDialog(false)}
+              className="coc-btn-secondary text-xs !py-2 !px-4"
+            >
+              查看教程
+            </Link>
+          </>
+        }
+      >
+        <div className="space-y-3 text-sm text-sub">
+          <p>
+            为了保证升级提醒正常工作，请允许后台运行并关闭电池优化。
+          </p>
+          {batteryStatus && (
+            <div className="coc-card p-3 text-xs space-y-1">
+              <p>设备厂商：<span className="text-gold font-bold">{batteryStatus.manufacturer.toUpperCase()}</span></p>
+              <p>需要自启动权限：{batteryStatus.needsAutostart ? "是" : "否"}</p>
+              <p>需要省电白名单：{batteryStatus.needsPowerSaveWhitelist ? "是" : "否"}</p>
+            </div>
+          )}
+          <p className="text-warning text-xs">
+            ⚠️ 国产安卓系统会主动杀后台进程，不设置可能导致 APP 关闭时通知不弹出。
+          </p>
+          <p className="text-muted text-xs">
+            在设置页面可以查看详细的厂商教程（小米 / 华为 / OPPO / vivo 等）。
+          </p>
+        </div>
+      </Modal>
+
+      {/* ======== 更新提示弹窗（GitHub 发现新版本时显示）======== */}
+      <Modal
+        open={showUpdateModal && !!updateResult?.release}
+        onClose={() => setShowUpdateModal(false)}
+        title={`发现新版本 ${updateResult?.latestTag ?? ""}`}
+        maxWidth="max-w-lg"
+        footer={
+          <>
+            <button
+              onClick={() => setShowUpdateModal(false)}
+              className="coc-btn-secondary text-xs !py-2 !px-4"
+            >
+              稍后提醒
+            </button>
+            <button
+              onClick={() => {
+                if (updateResult?.apkUrl) {
+                  openApkDownload(updateResult.apkUrl);
+                  toast.success("正在打开浏览器下载...", { className: "toast-success" });
+                } else {
+                  openReleasesPage();
+                }
+                setShowUpdateModal(false);
+              }}
+              className="coc-btn text-xs !py-2 !px-4"
+            >
+              立即更新
+            </button>
+          </>
+        }
+      >
+        {updateResult?.release && (
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="coc-card p-2">
+                <p className="text-muted text-[10px]">当前版本</p>
+                <p className="text-main font-bold">v{updateResult.currentVersion}</p>
+              </div>
+              <div className="coc-card p-2">
+                <p className="text-muted text-[10px]">最新版本</p>
+                <p className="text-gold font-bold">{updateResult.latestTag}</p>
+              </div>
+              <div className="coc-card p-2">
+                <p className="text-muted text-[10px]">发布时间</p>
+                <p className="text-main">{formatPublishedAt(updateResult.release.published_at)}</p>
+              </div>
+              <div className="coc-card p-2">
+                <p className="text-muted text-[10px]">APK 大小</p>
+                <p className="text-main">{updateResult.apkSize ? formatApkSize(updateResult.apkSize) : "—"}</p>
+              </div>
+            </div>
+            <div>
+              <p className="text-xs text-muted mb-1 font-semibold">更新日志</p>
+              <div
+                className="coc-card p-3 text-xs prose-update-log max-h-60 overflow-y-auto"
+                dangerouslySetInnerHTML={{
+                  __html: renderMarkdown(updateResult.release.body || "（无更新日志）"),
+                }}
+              />
+            </div>
+            {!updateResult.apkUrl && (
+              <p className="text-[11px] text-warning">
+                ⚠️ 此 Release 未附带 APK 资源，将跳转到 GitHub Releases 页面。
+              </p>
+            )}
+          </div>
+        )}
+      </Modal>
     </>
   );
 }

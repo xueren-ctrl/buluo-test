@@ -1,5 +1,9 @@
 /**
  * 通知设置面板 — CoC 羊皮纸风格
+ * 已改造为 Capacitor 本地通知：
+ *  - 通知权限：Android 13+ POST_NOTIFICATIONS
+ *  - 通知通道：coc_upgrade_complete / coc_builder_idle / coc_lab_complete
+ *  - 后台提醒：APP 关闭时由 AlarmManager 触发，无需 SW
  */
 import { useState } from "react";
 import type { NotifyStatus } from "@/lib/notification-system";
@@ -43,14 +47,14 @@ export function NotifySettingsPanel({
 
       <div className={`collapsible-content ${open ? "expanded" : "collapsed"}`}>
         <div className="coc-panel-body space-y-3">
-          {/* 浏览器通知权限 */}
+          {/* 本地通知权限（Android 13+ POST_NOTIFICATIONS）*/}
           <div className="space-y-1">
             <div className="flex items-center justify-between text-xs">
               <span className="text-sub">
-                浏览器通知
+                本地通知权限
                 {!status.browserNotifAvailable && <span className="text-danger ml-1">(不支持)</span>}
                 {status.browserNotifAvailable && !status.browserNotifGranted && <span className="text-warning ml-1">(未授权)</span>}
-                {status.browserNotifGranted && <span className="text-success ml-1">✓</span>}
+                {status.browserNotifGranted && <span className="text-success ml-1">✓ 已开启</span>}
               </span>
               <button
                 onClick={onEnableNotify}
@@ -72,27 +76,29 @@ export function NotifySettingsPanel({
                 {status.hint && <p className="text-muted mt-0.5">{status.hint}</p>}
               </div>
             )}
-            {status.isInstalled && (
-              <div className="text-[11px] text-success pl-1">
-                ✓ 已以 PWA 模式启动，可获得最佳通知体验
+            {status.browserNotifGranted && (
+              <div className="text-[11px] text-success leading-relaxed pl-1">
+                ✓ 已授权本地通知 · 三个通道：升级完成 / 工人空闲 / 实验室完成
+              </div>
+            )}
+            {!status.browserNotifGranted && status.browserNotifAvailable && (
+              <div className="text-[11px] text-muted leading-relaxed pl-1">
+                点击「申请权限」授予通知权限。Android 13+ 系统会弹出系统级权限对话框。
               </div>
             )}
           </div>
 
-          {/* 后台同步状态 */}
+          {/* 后台提醒状态（Capacitor AlarmManager）*/}
           <div className="space-y-1">
             <div className="flex items-center justify-between text-xs">
               <span className="text-sub">
-                后台同步（页面关闭时提醒）
-                {!status.periodicSyncSupported && <span className="text-warning ml-1">(不支持)</span>}
-                {status.periodicSyncSupported && <span className="text-success ml-1">✓</span>}
+                后台提醒（APP 关闭时仍能触发）
+                {status.periodicSyncSupported && <span className="text-success ml-1">✓ 已支持</span>}
               </span>
             </div>
-            {!status.periodicSyncSupported && (
-              <div className="text-[11px] text-muted leading-relaxed pl-1">
-                仅 Chrome / Edge 浏览器 + 安装 PWA 后支持。其他浏览器请保持页面打开，或重开页面时自动补发漏掉的通知。
-              </div>
-            )}
+            <div className="text-[11px] text-muted leading-relaxed pl-1">
+              基于 Android AlarmManager，即使关闭页面、返回桌面、锁屏，通知仍会按时弹出。
+            </div>
           </div>
 
           {/* 提醒层级 */}

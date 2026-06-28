@@ -341,8 +341,84 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes popIn {
+  from { opacity: 0; transform: scale(0.92) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
 .animate-fade-up {
   animation: fadeUp 0.25s ease-out both;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out both;
+}
+
+.animate-pop-in {
+  animation: popIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.animate-slide-in-left {
+  animation: slideInLeft 0.3s ease-out both;
+}
+
+/* 时间轴项目逐条入场 */
+.timeline-item {
+  animation: slideInLeft 0.3s ease-out both;
+}
+.timeline-item:nth-child(1) { animation-delay: 0.02s; }
+.timeline-item:nth-child(2) { animation-delay: 0.06s; }
+.timeline-item:nth-child(3) { animation-delay: 0.10s; }
+.timeline-item:nth-child(4) { animation-delay: 0.14s; }
+.timeline-item:nth-child(5) { animation-delay: 0.18s; }
+.timeline-item:nth-child(6) { animation-delay: 0.22s; }
+.timeline-item:nth-child(7) { animation-delay: 0.26s; }
+.timeline-item:nth-child(8) { animation-delay: 0.30s; }
+
+/* ===================== 更新日志排版 ===================== */
+.prose-update-log h1,
+.prose-update-log h2,
+.prose-update-log h3,
+.prose-update-log h4,
+.prose-update-log h5,
+.prose-update-log h6 {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-gold-light, #B8985A);
+  margin: 8px 0 4px;
+}
+.prose-update-log h1 { font-size: 15px; }
+.prose-update-log h2 { font-size: 14px; }
+.prose-update-log p {
+  margin: 4px 0;
+  line-height: 1.6;
+}
+.prose-update-log ul {
+  margin: 4px 0;
+  padding-left: 18px;
+}
+.prose-update-log li {
+  margin: 2px 0;
+  line-height: 1.6;
+  list-style-type: "• ";
+}
+.prose-update-log li::marker {
+  color: var(--color-gold);
 }
 
 /* ===================== Toast ===================== */

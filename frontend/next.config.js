@@ -1,84 +1,32 @@
-const withPWA = require("next-pwa")({
-  dest: "public",
-  disable: process.env.NODE_ENV === "development",
-  register: true,
-  skipWaiting: true,
-  clientsClaim: true,
-  cleanupOutdatedCaches: true,
-  runtimeCaching: [
-    // Cache First: 静态资源（图标、图片、字体）—— 长缓存
-    {
-      urlPattern: /^https?.*\/icons\//,
-      handler: "CacheFirst",
-      options: {
-        cacheName: "icons-cache",
-        expiration: {
-          maxEntries: 50,
-          maxAgeSeconds: 60 * 60 * 24 * 365,
-        },
-      },
-    },
-    {
-      urlPattern: /^https?.*\.(png|jpg|jpeg|gif|svg|webp|ico)/,
-      handler: "CacheFirst",
-      options: {
-        cacheName: "image-cache",
-        expiration: {
-          maxEntries: 100,
-          maxAgeSeconds: 60 * 60 * 24 * 30,
-        },
-      },
-    },
-    {
-      urlPattern: /^https?.*\.woff2?$/,
-      handler: "CacheFirst",
-      options: {
-        cacheName: "font-cache",
-        expiration: {
-          maxEntries: 20,
-          maxAgeSeconds: 60 * 60 * 24 * 365,
-        },
-      },
-    },
-
-    // Stale While Revalidate: Next.js 静态资源（JS/CSS/chunks）
-    // 先返回缓存（秒开），同时后台更新；下次访问自动是最新版本
-    // 用户无需手动刷新，新版本部署后自动生效
-    {
-      urlPattern: /^https?.*\/_next\//,
-      handler: "StaleWhileRevalidate",
-      options: {
-        cacheName: "next-assets-cache",
-        expiration: {
-          maxEntries: 100,
-          maxAgeSeconds: 60 * 60 * 24 * 7, // 7天
-        },
-      },
-    },
-
-    // Network First: 页面导航请求 —— 优先网络，确保 HTML 最新
-    {
-      urlPattern: ({ request }) => request.mode === "navigate",
-      handler: "NetworkFirst",
-      options: {
-        cacheName: "pages-cache",
-        networkTimeoutSeconds: 5,
-        expiration: {
-          maxEntries: 50,
-          maxAgeSeconds: 60 * 60 * 12, // 12小时
-        },
-      },
-    },
-  ],
-});
-
 /** @type {import('next').NextConfig} */
+
+// 读取 package.json 版本号，注入到客户端 bundle
+// 让 update-checker.ts 能拿到 CURRENT_VERSION
+const pkg = require("./package.json");
+const path = require("path");
+
 const nextConfig = {
-  trailingSlash: true,
+  // 纯静态导出，便于 Capacitor 打包成 APK
   output: "export",
+  trailingSlash: true,
   images: {
     unoptimized: true,
   },
+  // 注入版本号到 NEXT_PUBLIC_APP_VERSION
+  env: {
+    NEXT_PUBLIC_APP_VERSION: pkg.version || "1.0.0",
+    NEXT_PUBLIC_BUILD_TIME: new Date().toISOString(),
+  },
+  // monorepo：让 ../shared/*.ts 里的裸导入（@capacitor/core 等）
+  // 也能从 frontend/node_modules 解析
+  webpack: (config) => {
+    config.resolve.modules = config.resolve.modules || [];
+    const feModules = path.resolve(__dirname, "node_modules");
+    if (!config.resolve.modules.includes(feModules)) {
+      config.resolve.modules.push(feModules);
+    }
+    return config;
+  },
 };
 
-module.exports = withPWA(nextConfig);
+module.exports = nextConfig;

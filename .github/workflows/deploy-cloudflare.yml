@@ -5,6 +5,9 @@ on:
     branches: [main]
     paths:
       - 'frontend/**'
+      - 'shared/**'
+      - 'version.json'
+      - '.github/workflows/deploy-cloudflare.yml'
 
 jobs:
   deploy:
