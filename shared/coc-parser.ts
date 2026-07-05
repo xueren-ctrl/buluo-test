@@ -18,6 +18,7 @@ const TIMER_CATEGORIES = [
   "buildings", "spells", "heroes", "pets", "equipment", "units",
   "helpers",
   "buildings2", "heroes2", "units2", "siege_machines",
+  "traps", "traps2",
 ] as const;
 
 type RawItem = Record<string, unknown>;
@@ -96,6 +97,117 @@ function resolveName(category: string, dataId: number | null): string {
   // 未知 SC ID — 资产表中找不到
   warn(`resolveName: 未知 SC ID ${dataId} (category=${category})，使用 ID 作为名称`);
   return String(dataId);
+}
+
+/**
+ * 从 COC JSON 中提取黄金令牌（月卡 / Gold Pass）到期时间
+ * =====================================================
+ * COC 官方导出和第三方导出工具的字段命名不一致，这里自动检测多个常见字段名。
+ * 支持的格式：
+ *  - Unix 时间戳（秒）：10 位数字
+ *  - Unix 时间戳（毫秒）：13 位数字
+ *  - ISO 8601 字符串："2024-08-01T00:00:00Z" 或 "2024-08-01"
+ *  - 对象（含 expiry/endsAt/end 等子字段）
+ *
+ * @returns Unix 毫秒时间戳，找不到返回 null
+ */
+function extractGoldPassExpiry(data: Record<string, unknown>): number | null {
+  // 候选字段名（按优先级排序，覆盖常见导出工具命名习惯）
+  const CANDIDATE_KEYS = [
+    "goldPassExpiry",
+    "goldPassExpiryTime",
+    "goldPassExpiryDate",
+    "goldPassEnd",
+    "goldPassEndsAt",
+    "goldPassEndDate",
+    "gold_pass_expiry",
+    "gold_pass_expiry_time",
+    "gold_pass_end",
+    "gold_pass_ends_at",
+    "goldPass",
+    "gold_pass",
+    "seasonPassExpiry",
+    "seasonPassExpiryTime",
+    "seasonPassEnd",
+    "seasonPassEndsAt",
+    "season_pass_expiry",
+    "season_pass_end",
+    "seasonPass",
+    "season_pass",
+    "passExpiry",
+    "passExpiryTime",
+    "passEnd",
+    "passEndsAt",
+    "passEndDate",
+    "pass_expiry",
+    "pass_end",
+    "pass_ends_at",
+    "seasonEndsAt",
+    "season_ends_at",
+    "seasonEnd",
+    "season_end",
+  ];
+
+  for (const key of CANDIDATE_KEYS) {
+    if (!(key in data)) continue;
+    const val = data[key];
+    const ts = parseFlexibleTime(val);
+    if (ts != null) {
+      log(`  extractGoldPassExpiry: 命中字段 "${key}" = ${JSON.stringify(val)} → ${new Date(ts).toLocaleString("zh-CN")}`);
+      return ts;
+    }
+  }
+
+  // 检测嵌套对象（如 goldPass: { expiry: ... } 或 seasonPass: { endsAt: ... }）
+  const NESTED_OBJECT_KEYS = ["goldPass", "gold_pass", "seasonPass", "season_pass", "pass"];
+  const NESTED_SUB_KEYS = ["expiry", "expiryTime", "expiryDate", "end", "endsAt", "endDate", "expire", "expiresAt"];
+  for (const objKey of NESTED_OBJECT_KEYS) {
+    const obj = data[objKey];
+    if (obj == null || typeof obj !== "object") continue;
+    const rec = obj as Record<string, unknown>;
+    for (const subKey of NESTED_SUB_KEYS) {
+      if (!(subKey in rec)) continue;
+      const ts = parseFlexibleTime(rec[subKey]);
+      if (ts != null) {
+        log(`  extractGoldPassExpiry: 命中嵌套字段 "${objKey}.${subKey}" → ${new Date(ts).toLocaleString("zh-CN")}`);
+        return ts;
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
+ * 把多种时间格式统一转为 Unix 毫秒时间戳
+ * 支持：秒(10位)、毫秒(13位)、ISO 字符串、Date 字符串
+ */
+function parseFlexibleTime(val: unknown): number | null {
+  if (val == null) return null;
+
+  // 数字：秒 or 毫秒
+  if (typeof val === "number" && Number.isFinite(val) && val > 0) {
+    // 10 位 → 秒，13 位 → 毫秒；介于两者之间按秒处理（避免误判）
+    if (val > 1e12) return Math.floor(val);          // 毫秒
+    if (val > 1e9) return Math.floor(val * 1000);    // 秒
+    return null;
+  }
+
+  // 字符串：尝试 ISO 解析
+  if (typeof val === "string") {
+    const s = val.trim();
+    if (!s) return null;
+    // 纯数字字符串
+    if (/^\d+$/.test(s)) {
+      const n = parseInt(s, 10);
+      return parseFlexibleTime(n);
+    }
+    // ISO / Date 字符串
+    const t = Date.parse(s);
+    if (!Number.isNaN(t)) return t;
+  }
+
+  return null;
 }
 
 export interface ParseResult {
@@ -203,6 +315,7 @@ export function extractPlayerInfo(raw: string | object): PlayerInfo {
       builder_count: 5,
       active_upgrades: 0,
       completed_count: 0,
+      gold_pass_expiry: null,
     };
   }
 
@@ -236,6 +349,10 @@ export function extractPlayerInfo(raw: string | object): PlayerInfo {
     warn("extractPlayerInfo: buildings 字段不存在或非数组");
   }
 
+  // 黄金令牌（月卡）到期时间：自动检测多个常见字段名
+  // 兼容不同导出工具的字段命名习惯
+  const goldPassExpiry = extractGoldPassExpiry(data);
+
   const result = {
     player_tag: playerTag,
     player_name: playerName,
@@ -243,7 +360,13 @@ export function extractPlayerInfo(raw: string | object): PlayerInfo {
     builder_count: builderCount > 0 ? builderCount : 5,
     active_upgrades: 0,
     completed_count: 0,
+    gold_pass_expiry: goldPassExpiry,
   };
+  if (goldPassExpiry != null) {
+    log(`extractPlayerInfo: 检测到黄金令牌到期时间 ${new Date(goldPassExpiry).toLocaleString("zh-CN")}`);
+  } else {
+    log(`extractPlayerInfo: JSON 中未检测到黄金令牌字段`);
+  }
   log(`extractPlayerInfo: 完成，玩家=${playerName || "(无名)"}，TH=${townHallLevel}，工人=${result.builder_count}`);
   return result;
 }

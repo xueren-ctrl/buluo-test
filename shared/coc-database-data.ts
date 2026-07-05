@@ -80,7 +80,7 @@ const RAW_DATA: CocItemDef[] = [
   { scId: 1000028, category: "buildings", zh: "空气炮", en: "Air Sweeper", buildCategory: "defense", maxLevel: 9, upgradeTimeSec: estTime(9, 3600, 7*DAY), thRequired: genTH(9,6,1), priority: 4, usesBuilder: true },
   { scId: 1000031, category: "buildings", zh: "天鹰火炮", en: "Eagle Artillery", buildCategory: "defense", maxLevel: 8, upgradeTimeSec: estTime(8, 43200, 16*DAY), thRequired: genTH(8,11,1), priority: 9, usesBuilder: true },
   { scId: 1000032, category: "buildings", zh: "炸弹塔", en: "Bomb Tower", buildCategory: "defense", maxLevel: 13, upgradeTimeSec: estTime(13, 14400, 10*DAY), thRequired: genTH(13,8,1), priority: 6, usesBuilder: true },
-  { scId: 1000067, category: "buildings", zh: "散射炮", en: "Scattershot", buildCategory: "defense", maxLevel: 6, upgradeTimeSec: estTime(6, 43200, 15*DAY), thRequired: genTH(6,13,1), priority: 8, usesBuilder: true },
+  { scId: 1000067, category: "buildings", zh: "投石炮", en: "Scattershot", buildCategory: "defense", maxLevel: 6, upgradeTimeSec: estTime(6, 43200, 15*DAY), thRequired: genTH(6,13,1), priority: 8, usesBuilder: true },
   { scId: 1000072, category: "buildings", zh: "法术塔", en: "Spell Tower", buildCategory: "defense", maxLevel: 6, upgradeTimeSec: estTime(6, 43200, 12*DAY), thRequired: genTH(6,14,1), priority: 7, usesBuilder: true },
   { scId: 1000077, category: "buildings", zh: "擎天巨柱", en: "Monolith", buildCategory: "defense", maxLevel: 5, upgradeTimeSec: estTime(5, 43200, 16*DAY), thRequired: genTH(5,15,1), priority: 9, usesBuilder: true },
   { scId: 1000015, category: "buildings", zh: "建筑工人小屋", en: "Builder Hut", buildCategory: "utility", maxLevel: 5, upgradeTimeSec: estTime(5, 3600, 14*DAY), thRequired: genTH(5,14,1), priority: 6, usesBuilder: true },

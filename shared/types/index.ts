@@ -72,6 +72,8 @@ export interface PlayerInfo {
   active_upgrades: number;
   completed_count: number;
   last_upload_at?: string | null;
+  /** 黄金令牌（月卡）到期时间（Unix 毫秒），JSON 中无此字段则为 null */
+  gold_pass_expiry?: number | null;
 }
 
 /**

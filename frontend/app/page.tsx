@@ -82,6 +82,46 @@ function createLocalClientId(): string {
   return `${LOCAL_CLIENT_PREFIX}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
+/**
+ * 黄金令牌（月卡）到期徽章
+ * - 已过期：红色
+ * - 3 天内到期：黄色（临期）
+ * - 3 天以上：金色
+ */
+function GoldPassBadge({ expiry }: { expiry: number }) {
+  const now = Date.now();
+  const diffMs = expiry - now;
+  const diffDays = Math.ceil(diffMs / 86400000);
+
+  let bg = "rgba(255, 200, 0, 0.15)";
+  let color = "#e6b800";
+  let text: string;
+
+  if (diffMs <= 0) {
+    bg = "rgba(239, 68, 68, 0.15)";
+    color = "#ef4444";
+    text = "月卡已过期";
+  } else if (diffDays <= 3) {
+    bg = "rgba(245, 158, 11, 0.15)";
+    color = "#f59e0b";
+    text = `月卡 ${diffDays} 天后到期`;
+  } else {
+    const date = new Date(expiry);
+    const mm = String(date.getMonth() + 1).padStart(2, "0");
+    const dd = String(date.getDate()).padStart(2, "0");
+    text = `月卡 ${mm}-${dd} 到期`;
+  }
+
+  return (
+    <span
+      className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium"
+      style={{ background: bg, color }}
+    >
+      {text}
+    </span>
+  );
+}
+
 export default function HomePage() {
   // ── 基本状态 ──────────────────────────
   const [jsonInput, setJsonInput] = useState("");
@@ -176,11 +216,16 @@ export default function HomePage() {
 
       // 3. 初始化 Capacitor 本地通知系统
       //    - 创建 Android 通知通道（幂等，每次启动都调用）
+      //    - 主动请求 POST_NOTIFICATIONS 权限（Android 13+ 安装后默认未授权，
+      //      不主动请求则后台常驻通知和升级完成通知都不会显示）
       //    - 检测权限状态更新 UI
       //    - 注册 LocalNotifications 触发监听：通知被系统触发时自动 markTierNotified，
       //      避免下次打开 APP 时 catch-up tick 重复发送
       try {
         await createNotificationChannels();
+        if (cancelled) return;
+        // 主动请求通知权限（prompt 状态会弹出系统对话框，已授权/已拒绝则为 no-op）
+        await requestNotificationPermission();
         if (cancelled) return;
         const status = await detectNotifyStatusAsync();
         if (cancelled) return;
@@ -662,10 +707,15 @@ export default function HomePage() {
             上传 JSON · 自动分析基地 · 本地通知提醒
           </p>
           {playerInfo && (
-            <p className="mt-2 text-xs text-muted">
-              {playerInfo.player_name || playerInfo.player_tag}
-              <span className="mx-1.5">·</span>
-              <span className="text-gold">大本 Lv{playerInfo.town_hall_level}</span>
+            <p className="mt-2 text-xs text-muted flex flex-wrap items-center gap-x-1.5 gap-y-1">
+              <span>
+                {playerInfo.player_name || playerInfo.player_tag}
+                <span className="mx-1.5">·</span>
+                <span className="text-gold">大本 Lv{playerInfo.town_hall_level}</span>
+              </span>
+              {playerInfo.gold_pass_expiry != null && (
+                <GoldPassBadge expiry={playerInfo.gold_pass_expiry} />
+              )}
             </p>
           )}
         </header>

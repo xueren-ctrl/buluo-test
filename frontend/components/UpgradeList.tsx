@@ -15,9 +15,11 @@ const CATEGORY_ORDER: { key: string; label: string; icon: string }[] = [
   { key: "units", label: "兵种", icon: "👾" },
   { key: "helpers", label: "助手", icon: "🔧" },
   { key: "siege_machines", label: "攻城机器", icon: "🏗️" },
+  { key: "traps", label: "陷阱", icon: "💣" },
   { key: "buildings2", label: "夜世界建筑", icon: "🌙" },
   { key: "heroes2", label: "夜世界英雄", icon: "🦸" },
   { key: "units2", label: "夜世界兵种", icon: "👹" },
+  { key: "traps2", label: "夜世界陷阱", icon: "🪤" },
 ];
 
 export function UpgradeList({ items }: { items: UpgradeItem[] }) {

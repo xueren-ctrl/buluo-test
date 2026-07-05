@@ -1,7 +1,31 @@
 {
-  "version": "1.2.0",
-  "apkUrl": "https://github.com/xueren-ctrl/buluo/releases/tag/v1.2.0",
+  "version": "1.2.3",
+  "apkUrl": "https://github.com/xueren-ctrl/buluo/releases/tag/v1.2.3",
   "changelog": [
+    {
+      "version": "1.2.3",
+      "date": "2026-7-5",
+      "notes": [
+        "修复陷阱名称显示为\"陷阱\"而非具体名称的问题（陷阱 SC ID 从错误的 1000xxx 修正为真实的 12000xxx 系列）",
+        "修复升级列表缺少陷阱/夜世界陷阱分类标题的问题"
+      ]
+    },
+    {
+      "version": "1.2.2",
+      "date": "2026-7-5",
+      "notes": [
+        "修复后台常驻监测通知不显示（APP 安装后未主动请求通知权限，现已在启动时自动请求）",
+        "新增月卡（黄金令牌）到期时间显示（自动检测 JSON 中 goldPassExpiry/seasonPass 等多种字段，首页徽章展示，3天内临期黄色，已过期红色）"
+      ]
+    },
+    {
+      "version": "1.2.1",
+      "date": "2026-7-1",
+      "notes": [
+        "修复投石炮显示为散射炮的建筑名称翻译错误（Scattershot 官方简中为投石炮）",
+        "修复陷阱（隐形弹簧/巨型炸弹/空中炸弹等）升级不显示的问题（新增 traps 类别解析 + TRAP_MAP 映射）"
+      ]
+    },
     {
       "version": "1.2.0",
       "date": "2026-7-1",

@@ -67,7 +67,7 @@ const BUILDING_MAP: AssetMap = {
   1000032: { zh: "炸弹塔", en: "Bomb Tower", type: "buildings", color: "red", icon: "💣" },
   1000059: { zh: "攻城机器工坊", en: "Workshop", type: "buildings", color: "zinc", icon: "🏗️" },
   1000064: { zh: "铸币工坊", en: "Forge", type: "buildings", color: "amber", icon: "🔨" },
-  1000067: { zh: "散射炮", en: "Scattershot", type: "buildings", color: "red", icon: "🔫" },
+  1000067: { zh: "投石炮", en: "Scattershot", type: "buildings", color: "red", icon: "🪨" },
   1000068: { zh: "战宠小屋", en: "Pet House", type: "buildings", color: "emerald", icon: "🐾" },
   1000070: { zh: "铁匠铺", en: "Blacksmith", type: "buildings", color: "violet", icon: "⚒️" },
   1000071: { zh: "英雄殿堂", en: "Hero Hall", type: "buildings", color: "yellow", icon: "🛡️" },
@@ -200,6 +200,20 @@ const HELPER_MAP: AssetMap = {
   124000002: { zh: "锻造助手", en: "Forge Assistant", type: "helpers", color: "rose", icon: "⚙️" },
 };
 
+// 陷阱 traps (12000xxx) — SC ID 来自用户实际 COC JSON 导出数据
+// 12000000=Bomb(TH2) / 12000001=SpringTrap(TH4) / 12000002=GiantBomb(TH6) /
+// 12000005=AirBomb(TH6) / 12000006=SeekingAirMine(TH7) / 12000008=SkeletonTrap(TH8) /
+// 12000016=TornadoTrap(TH11)
+const TRAP_MAP: AssetMap = {
+  12000000: { zh: "隐形炸弹", en: "Bomb", type: "traps", color: "red", icon: "💣" },
+  12000001: { zh: "隐形弹簧", en: "Spring Trap", type: "traps", color: "amber", icon: "🌀" },
+  12000002: { zh: "巨型炸弹", en: "Giant Bomb", type: "traps", color: "red", icon: "💥" },
+  12000005: { zh: "空中炸弹", en: "Air Bomb", type: "traps", color: "cyan", icon: "🎈" },
+  12000006: { zh: "搜空地雷", en: "Seeking Air Mine", type: "traps", color: "cyan", icon: "🎯" },
+  12000008: { zh: "骷髅陷阱", en: "Skeleton Trap", type: "traps", color: "slate", icon: "💀" },
+  12000016: { zh: "龙卷风陷阱", en: "Tornado Trap", type: "traps", color: "cyan", icon: "🌪️" },
+};
+
 // 夜世界建筑 buildings2 (1000xxx, 1000033+) — 名称核对自官方简中
 const BUILDING2_MAP: AssetMap = {
   1000033: { zh: "城墙", en: "Builder Hall Wall", type: "buildings2", color: "slate", icon: "🧱" },
@@ -268,7 +282,7 @@ const SIEGE_MAP: AssetMap = {
 export const ITEM_MAP: AssetMap = {
   ...BUILDING_MAP, ...SPELL_MAP, ...HERO_MAP, ...PET_MAP, ...EQUIPMENT_MAP,
   ...UNIT_MAP, ...HELPER_MAP, ...BUILDING2_MAP, ...HERO2_MAP, ...UNIT2_MAP,
-  ...SIEGE_MAP,
+  ...SIEGE_MAP, ...TRAP_MAP,
 };
 
 // 注意：siege_machines 与 units 共享 4000xxx，按 category 优先精确匹配
@@ -284,6 +298,7 @@ const BY_CATEGORY: Record<string, AssetMap> = {
   heroes2: HERO2_MAP,
   units2: UNIT2_MAP,
   siege_machines: SIEGE_MAP,
+  traps: TRAP_MAP,
 };
 
 // ── 分类中文标签 ─────────────────────────────
@@ -316,6 +331,7 @@ export const CATEGORY_BG_COLORS: Record<string, string> = {
   heroes2: "from-orange-900/20 to-orange-900/5",
   units2: "from-teal-900/20 to-teal-900/5",
   siege_machines: "from-zinc-800/20 to-zinc-800/5",
+  traps: "from-red-900/20 to-red-900/5",
 };
 
 // ── 稀有度颜色 ───────────────────────────────
