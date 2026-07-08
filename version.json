@@ -1,7 +1,14 @@
 {
-  "version": "1.2.4",
-  "apkUrl": "https://github.com/xueren-ctrl/buluo/releases/tag/v1.2.4",
+  "version": "1.2.5",
+  "apkUrl": "https://github.com/xueren-ctrl/buluo/releases/tag/v1.2.5",
   "changelog": [
+    {
+      "version": "1.2.5",
+      "date": "2026-7-8",
+      "notes": [
+        "修复测试通知被升级调度器误取消的问题（cancelAllScheduledNotifications 现在排除测试通知 ID）"
+      ]
+    },
     {
       "version": "1.2.4",
       "date": "2026-7-8",

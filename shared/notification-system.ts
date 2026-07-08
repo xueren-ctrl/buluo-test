@@ -176,6 +176,9 @@ export async function requestNotificationPermissionDetailed(): Promise<Permissio
   }
 }
 
+// 测试通知固定 ID，cancelAllScheduledNotifications 会跳过此 ID
+export const TEST_NOTIF_ID = 999999;
+
 // ── 通知 ID 生成（基于字符串哈希，跨重启稳定）──
 export function notifIdFromKey(key: string): number {
   let h = 0;
@@ -268,7 +271,7 @@ export async function scheduleTestNotification(delaySec: number = 30): Promise<{
   try {
     await createNotificationChannels();
     const fireAt = new Date(Date.now() + delaySec * 1000);
-    const testId = 999999; // 固定 ID，便于重复测试时取消旧的
+    const testId = TEST_NOTIF_ID; // 固定 ID，便于重复测试时取消旧的
     try {
       await LocalNotifications.cancel({ notifications: [{ id: testId }] });
     } catch {
@@ -348,11 +351,13 @@ export async function cancelScheduledNotification(id: number): Promise<void> {
 export async function cancelAllScheduledNotifications(): Promise<void> {
   try {
     const pending = await LocalNotifications.getPending();
-    if (pending.notifications.length > 0) {
+    // 排除测试通知（ID=TEST_NOTIF_ID），避免调度器重新调度时误取消用户刚设的测试通知
+    const toCancel = pending.notifications.filter((n) => n.id !== TEST_NOTIF_ID);
+    if (toCancel.length > 0) {
       await LocalNotifications.cancel({
-        notifications: pending.notifications.map((n) => ({ id: n.id })),
+        notifications: toCancel.map((n) => ({ id: n.id })),
       });
-      log(`已取消 ${pending.notifications.length} 个待发通知`);
+      log(`已取消 ${toCancel.length} 个待发通知（保留测试通知 ${TEST_NOTIF_ID}）`);
     }
   } catch (e) {
     warn("取消所有待发通知失败:", e);
