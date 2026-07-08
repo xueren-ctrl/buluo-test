@@ -1,7 +1,17 @@
 {
-  "version": "1.2.3",
-  "apkUrl": "https://github.com/xueren-ctrl/buluo/releases/tag/v1.2.3",
+  "version": "1.2.4",
+  "apkUrl": "https://github.com/xueren-ctrl/buluo/releases/tag/v1.2.4",
   "changelog": [
+    {
+      "version": "1.2.4",
+      "date": "2026-7-8",
+      "notes": [
+        "参考部落小工具 APK 同步全部 ID 中文名映射（建筑/法术/英雄/宠物/兵种/陷阱/攻城机器/助力/夜世界）",
+        "修复兵种 UNIT_MAP ID 顺序错位问题（4000004 起从炸弹人开始按兵营解锁顺序排列）",
+        "修复夜世界建筑 BUILDING2_MAP ID 映射错误",
+        "修复夜世界兵种 UNIT2_MAP 名称与 ID 错位问题"
+      ]
+    },
     {
       "version": "1.2.3",
       "date": "2026-7-5",
