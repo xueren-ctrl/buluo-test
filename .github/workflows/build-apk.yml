@@ -29,9 +29,7 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
         with:
-          packages: |
-            platforms;android-36
-            build-tools;36.1.0
+          packages: 'platforms;android-36 build-tools;36.1.0'
 
       - name: Cache npm
         uses: actions/cache@v3
@@ -69,7 +67,6 @@ jobs:
           else
             echo "Generating debug keystore for signing"
             keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
-            SDK_DIR=$(dirname $(dirname $(which sdkmanager)))
             BT=$(find $ANDROID_HOME -name apksigner -path "*build-tools*" | head -1)
             ZA=$(find $ANDROID_HOME -name zipalign -path "*build-tools*" | head -1)
             $ZA -v -p 4 app/build/outputs/apk/release/app-release-unsigned.apk app-aligned.apk
