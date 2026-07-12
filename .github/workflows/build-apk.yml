@@ -47,9 +47,15 @@ jobs:
         working-directory: frontend
         run: npm run build
 
-      - name: Sync to Android
+      - name: Sync web assets to Android
         working-directory: frontend
-        run: npx cap sync android
+        run: |
+          # capacitor.config.ts 在 frontend/，但 android/ 在根目录
+          # 创建符号链接让 capacitor 找到 android 平台
+          if [ ! -e android ]; then
+            ln -s ../android android
+          fi
+          npx cap sync android
 
       - name: Make gradlew executable
         working-directory: android
