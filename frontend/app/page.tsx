@@ -68,6 +68,7 @@ import { BaseScoreCard } from "@/components/BaseScoreCard";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { AccountSwitcher } from "@/components/AccountSwitcher";
 import { Modal } from "@/components/Modal";
+import { MonthlyCardPanel } from "@/components/MonthlyCardPanel";
 
 /* ================================================================
    首页 — "部落冲突升级规划助手" PWA 应用级体验
@@ -745,6 +746,9 @@ export default function HomePage() {
             exportTimeLabel={exportTimeLabel}
           />
         </div>
+
+        {/* ======== 月卡剩余天数（独立模块，不影响其他功能）======== */}
+        <MonthlyCardPanel />
 
         {/* ======== 升级数据面板 ======== */}
         {upgrades.length > 0 && (

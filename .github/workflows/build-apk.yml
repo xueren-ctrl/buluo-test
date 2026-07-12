@@ -1,0 +1,105 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: Build APK
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: |
+            platforms;android-36
+            build-tools;36.1.0
+
+      - name: Cache npm
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('frontend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build web
+        working-directory: frontend
+        run: npm run build
+
+      - name: Sync to Android
+        working-directory: frontend
+        run: npx cap sync android
+
+      - name: Make gradlew executable
+        working-directory: android
+        run: chmod +x ./gradlew
+
+      - name: Build APK
+        working-directory: android
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: Sign APK with debug keystore
+        working-directory: android
+        run: |
+          if [ -f keystore.properties ]; then
+            echo "Using project keystore"
+          else
+            echo "Generating debug keystore for signing"
+            keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+            SDK_DIR=$(dirname $(dirname $(which sdkmanager)))
+            BT=$(find $ANDROID_HOME -name apksigner -path "*build-tools*" | head -1)
+            ZA=$(find $ANDROID_HOME -name zipalign -path "*build-tools*" | head -1)
+            $ZA -v -p 4 app/build/outputs/apk/release/app-release-unsigned.apk app-aligned.apk
+            $BT sign --ks debug.keystore --ks-key-alias androiddebugkey --ks-pass pass:android --key-pass pass:android --out app-release.apk app-aligned.apk
+            $BT verify app-release.apk
+          fi
+
+      - name: Find APK
+        id: find_apk
+        working-directory: android
+        run: |
+          if [ -f app-release.apk ]; then
+            echo "apk_path=app-release.apk" >> $GITHUB_OUTPUT
+          else
+            echo "apk_path=app/build/outputs/apk/release/app-release-unsigned.apk" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: buluo-app-apk
+          path: android/${{ steps.find_apk.outputs.apk_path }}
+
+      - name: Create Release and Upload APK
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: apk-${{ github.run_number }}
+          name: 部落小助手 APK (Build ${{ github.run_number }})
+          body: |
+            自动构建的 APK，包含月卡剩余天数显示功能。
+
+            下载 `app-release.apk` 安装即可。
+          files: android/${{ steps.find_apk.outputs.apk_path }}
