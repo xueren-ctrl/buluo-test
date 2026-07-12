@@ -61,6 +61,17 @@ jobs:
         working-directory: android
         run: chmod +x ./gradlew
 
+      - name: Link node_modules for Gradle resolution
+        working-directory: .
+        run: |
+          # capacitor.settings.gradle 中路径为 ../node_modules/@capacitor/...
+          # 这是相对于 android/ 目录的，指向根目录 node_modules/
+          # 但 npm 包实际在 frontend/node_modules/，创建符号链接解决
+          if [ ! -e node_modules ]; then
+            ln -s frontend/node_modules node_modules
+          fi
+          ls -la node_modules/@capacitor/ | head -10
+
       - name: Build APK
         working-directory: android
         run: ./gradlew assembleRelease --no-daemon
